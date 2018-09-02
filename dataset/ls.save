@@ -1,0 +1,144 @@
+
+#!/usr/bin/env bash
+
+AUTOGEN_TPL="# This is automatically generated file! Do not edit!"
+
+function displayDatasetInfo {
+    DATASET_NAME="$1"
+    STR="    $DATASET_NAME"
+    if [ -n "$2" ]; then
+        DATASET_METADATA_DIR="$RAW_DATASETS_METADATA_DIR/$DATASET_NAME"
+
+        N_PROJECTS_FILE=$DATASET_METADATA_DIR/n_projects
+        if [ ! -f "$N_PROJECTS_FILE" ]; then
+            if [ -n "$3" ]; then
+                echo "Counting number of projects..."
+                N_PROJECTS=$( find "$RAW_DATASETS_DIR/$DATASET_NAME" -mindepth 2 -maxdepth 2 -type d | wc -l)  # finding number of subfolders in train/ test/ $
+                echo -e "$AUTOGEN_TPL\n$N_PROJECTS" > $N_PROJECTS_FILE
+            else
+                N_PROJECTS="UNK"
+            fi    
+        else
+            N_PROJECTS=$(tail -n 1 $N_PROJECTS_FILE)
+        fi
+
+        N_FILES_FILE=$DATASET_METADATA_DIR/n_files
+        if [ ! -f "$N_FILES_FILE" ]; then
+            if [ -n "$3" ]; then
+                echo "Counting number of files... It may take a while ..."
+                N_FILES=$( find "$RAW_DATASETS_DIR/$DATASET_NAME" -mindepth 2 -type f -name "*.java" | wc -l )
+                echo -e "$AUTOGEN_TPL\n$N_FILES" > $N_FILES_FILE 
+            else
+                N_FILES="UNK"
+            fi
+        else
+            N_FILES=$(tail -n 1 $N_FILES_FILE)
+        fi
+
+	N_TOKENS_FILE=$DATASET_METADATA_DIR/n_tokens
+        if [ ! -f "$N_TOKENS_FILE" ]; then
+            if [ -n "$3" ]; then
+                echo "Counting number of tokens... It may take a while ..."
+                N_TOKENS=$( find "$RAW_DATASETS_DIR/$DATASET_NAME" -mindepth 2 -type f -name "*.java" -exec wc -w {} + | awk '/total/{print $1}' | paste -sd+ | bc )
+                echo -e "$AUTOGEN_TPL\n$N_TOKENS" > $N_TOKENS_FILE
+            else
+                N_TOKENS="UNK"
+            fi
+        else
+            N_TOKENS=$(tail -n 1 $N_TOKENS_FILE)
+        fi
+	STR="$STR   $N_PROJECTS    $N_FILES $N_TOKENS"
+    fi
+    echo "$STR"
+}
+
+displayDatasetInfoVerbose() {
+    local DATASET="$1"
+    echo
+    echo "$DATASET  (Location $RAW_DATASETS_DIR/$DATASET)"
+    if [ -d "$PARSED_DATASETS_DIR/$DATASET/parsed" ]; then
+        echo -e "      \e[32mparsed\e[39m"
+    else
+        echo -e "      \e[31mnot parsed\e[39m"
+    fi
+    echo
+    local PREP_LOC="$PARSED_DATASETS_DIR/$DATASET/repr"
+    echo "Preprocessings:   (Location: $PREP_LOC)"
+    echo
+    for dir in $PREP_LOC/*; do
+        local PREP_NAME="$(basename $dir)"
+        if [ "$PREP_NAME" == "*" ]; then
+            continue
+        fi
+        STR="     $PREP_NAME"
+        for prep_type in "${PREPROCESSING_TYPES[@]}"; do
+            local val=$(cat "$PREP_LOC/$PREP_NAME/preprocessing_types.json" | jq -r ".$prep_type")
+            if [ x"$val" == x"true" ]; then
+                STR="$STR    \e[32m1\e[39m"
+            else
+                STR="$STR    \e[31m0\e[39m"
+            fi
+        done
+#        N_TOKENS_FILE=$DATASET_METADATA_DIR/n_tokens
+#        if [ ! -f "$N_TOKENS_FILE" ]; then
+#            N_TOKENS="UNK"
+#        else
+#            N_TOKENS=$(tail -n 1 $N_TOKENS_FILE)
+#        fi 
+        echo -e $STR
+    done
+    echo    
+}
+
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+source $CURRENT_DIR/.conf
+
+function checkVarInConf {
+    VAR_NAME="$1"
+    if [ -z "${!VAR_NAME}" ]; then
+        echo "$VAR_NAME variable is not found in .conf file"
+        exit 1
+    fi
+}
+
+function checkDirExists {
+    VAR_NAME="$1"
+    if [ ! -d "${!VAR_NAME}" ]; then
+        echo "Directory specified as $VAR_NAME (${$VAR_NAME}) does not exist"
+        exit 2
+    fi
+}
+
+if [ x"$1" == x"-l" ]; then
+    LONG_OPTION="1"
+    shift 1
+fi
+
+if [ x"$1" == x"-ll" ]; then
+    LONG_OPTION_WITH_UPDATE="1"
+    shift 1
+fi
+
+if [ -n "$1" ]; then
+    DATASET="$1"
+fi
+
+checkVarInConf RAW_DATASETS_DIR
+checkVarInConf RAW_DATASETS_METADATA_DIR
+checkVarInConf PARSED_DATASETS_DIR
+checkVarInConf PREPROCESSING_TYPES
+
+checkDirExists RAW_DATASETS_DIR
+checkDirExists RAW_DATASETS_METADATA_DIR
+checkDirExists PARSED_DATASETS_DIR
+
+
+if [ -n "$DATASET" ]; then
+    displayDatasetInfoVerbose "$DATASET"
+else
+    echo -e "Raw datasets: (Location: $RAW_DATASETS_DIR)\n"
+    for dir in $RAW_DATASETS_DIR/*; do
+        displayDatasetInfo "$(basename $dir)" $LONG_OPTION $LONG_OPTION_WITH_UPDATE
+    done
+    echo
+fi

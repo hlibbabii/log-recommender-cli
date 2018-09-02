@@ -1,0 +1,242 @@
+#!/usr/bin/env bash
+
+#------------------------------------------------------------------------------------
+set -e  # Fail on first error
+
+# Some useful global variables and constants
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+SCRIPT_NAME="$0"
+
+source $CURRENT_DIR/../.conf
+source $CURRENT_DIR/../log4bash.sh
+
+AUTOGEN_TPL="# This is automatically generated file! Do not edit!"
+#------------------------------------------------------------------------------------
+
+printRed() {
+    echo -e "\e[31m${1}\e[39m"
+}
+
+printGreen() {
+    echo -e "\e[32m${1}\e[39m"
+}
+
+#------------------------------------------------------------------------------------
+getProjectsNumber() {
+    local _dataset_name="$1"
+    local _result_var_name="$2"
+    local _long_option="$3"
+    
+    local _n_projects_file=$RAW_DATASETS_METADATA_DIR/$_dataset_name/n_projects
+    local _n_projects="UNK"
+    if [ ! -f "$_n_projects_file" ]; then
+        if [ "$_long_option" == "-ll" ]; then
+            log_info "Counting number of projects for $_dataset_name ..."
+            _n_projects=$(find "$RAW_DATASETS_DIR/$_dataset_name" -mindepth 2 -maxdepth 2 -type d | wc -l)  # finding number of subfolders in trai$
+            echo -e "$AUTOGEN_TPL\n$_n_projects" > $_n_projects_file
+        fi
+    else
+        _n_projects=$(tail -n 1 $_n_projects_file)
+    fi
+    printf -v "$_result_var_name" '%s' "$_n_projects" 
+}
+
+getFilesNumber() {
+    local _dataset_name="$1"
+    local _result_var_name="$2"
+    local _long_option="$3"
+
+    local _n_files_file=$RAW_DATASETS_METADATA_DIR/$_dataset_name/n_files
+    local _n_files="UNK"
+    if [ ! -f "$_n_files_file" ]; then
+        if [ "$_long_option" == "-ll" ]; then
+            log_info "Counting number of files in $_dataset_name ... It may take a while ..."
+            _n_files=$( find "$RAW_DATASETS_DIR/$_dataset_name" -mindepth 2 -type f -name "*.java" | wc -l )
+            echo -e "$AUTOGEN_TPL\n$_n_files" > $_n_files_file
+        fi
+    else
+        _n_files=$(tail -n 1 $_n_files_file)
+    fi
+    printf -v "$_result_var_name" '%s' "$_n_files"
+}
+
+getTokensNumber() {
+    local _dataset_name="$1"
+    local _result_var_name="$2"
+    local _long_option="$3"
+
+    local _n_tokens_file="$RAW_DATASETS_METADATA_DIR/$_dataset_name/n_tokens"
+    local _n_tokens="UNK"
+    if [[ ! -f "$_n_tokens_file" ]]; then
+        if [[ "$_long_option" == "-ll" ]]; then
+            log_info "Counting number of tokens in $_dataset_name ... It may take a while ..."
+            _n_tokens=$( find "$RAW_DATASETS_DIR/${_dataset_name}" -mindepth 2 -type f -name "*.java" -exec wc -w {} + \
+                                                                                                | awk '/total/{print $1}' | paste -sd+ | bc )
+            echo -e "${AUTOGEN_TPL}\n${_n_tokens}" > ${_n_tokens_file}
+        fi
+    else
+        _n_tokens=$(tail -n 1 $_n_tokens_file)
+    fi
+    printf -v "$_result_var_name" '%s' "$_n_tokens"
+}
+
+getTokensNumberInRepr() {
+    local _dataset_name="$1"
+    local _repr_name="$2"
+    local _result_var_name="$3"
+    local _long_option="$4"
+    
+    local _parsed_dataset_dir="$PARSED_DATASETS_DIR/$_dataset_name"
+    local _n_tokens_file="$_parsed_dataset_dir/metadata/$_repr_name/n_tokens"
+    local _n_tokens="UNK"
+    if [[ ! -f "$_n_tokens_file" ]]; then
+        if [[ "$_long_option" == "-ll" ]]; then
+            log_info "Counting number of tokens in $_dataset_name ... It may take a while ..."
+            log_debug "Looking at $_parsed_dataset_dir/repr/$_repr_name"
+            _n_tokens=$( find "$_parsed_dataset_dir/repr/$_repr_name" -mindepth 2 -type f -name "*.repr" -exec wc -w {} + \
+                                                                                                   | awk '/total/{print $1}' | paste -sd+ | bc )
+            echo -e "${AUTOGEN_TPL}\n${_n_tokens}" > ${_n_tokens_file}
+        fi
+    else
+        _n_tokens=$(tail -n 1 $_n_tokens_file)
+    fi
+    printf -v "$_result_var_name" '%s' "$_n_tokens"
+}
+
+displayDatasetInfo() {
+    local _dataset_name="$1"
+    local _result_var_name="$2"
+    local _long_option="$3"
+
+    local _str="$_dataset_name"
+    if [ -n "$_long_option" ]; then
+        getProjectsNumber "$_dataset_name" result "$_long_option"; local _n_projects=${result} 
+        getFilesNumber    "$_dataset_name" result "$_long_option"; local _n_files=${result}
+        getTokensNumber   "$_dataset_name" result "$_long_option"; local _n_tokens=${result}
+               
+	_str="$_str $_n_projects $_n_files $_n_tokens"
+    fi
+    printf -v "$_result_var_name" '%s' "$_str"
+}
+
+displayGeneralDatasetInfoVerbose() {
+    local _dataset="$1"
+    echo
+    echo "$_dataset  (Location $RAW_DATASETS_DIR/$_dataset)"
+    if [ -d "$PARSED_DATASETS_DIR/$_dataset/parsed" ]; then
+        printGreen "parsed"
+    else
+        printRed "not parsed"
+    fi
+    echo
+}
+
+getPerformedPreps() {
+    local _prep_loc="$1"
+    local _result_var_name="$2"
+    
+    local _str=""
+    for prep_type in "${PREPROCESSING_TYPES[@]}"; do
+        local _val=$(cat "$_prep_loc/preprocessing_types.json" | jq -r ".$prep_type")
+        if [ x"$_val" == x"true" ]; then
+            _str="$_str $( printGreen 1 )"
+        else
+            _str="$_str $( printRed 0 )"
+        fi
+    done
+
+    printf -v "$_result_var_name" '%s' "$_str"
+}
+
+displayDatasetInfoVerbose() {
+    local _dataset="$1"
+    local _long_option="$2"
+
+    if [[ ! -d "$RAW_DATASETS_DIR/$_dataset" ]]; then
+        echo "$RAW_DATASETS_DIR/$_dataset"
+        echo -e "Dataset $_dataset does not exist"
+        $CURRENT_DIR/$SCRIPT_NAME
+        exit 0
+    fi
+
+    displayGeneralDatasetInfoVerbose $_dataset
+    
+    local _all_preps_loc="$PARSED_DATASETS_DIR/$_dataset/repr"
+    echo "Preprocessings:   (Location: $_all_preps_loc)"
+    echo
+    local _str="-|-"
+    for prep_type in "${PREPROCESSING_TYPES[@]}"; do
+        _str="$_str $prep_type"
+    done
+    _str="$_str tokens \n"
+    for _prep_loc in $_all_preps_loc/*; do
+        local _prep_name="$(basename $_prep_loc)"
+        if [ "$_prep_name" == "*" ]; then
+            continue
+        fi
+        
+        getPerformedPreps $_prep_loc                        result              ; _performed_preps="${result}"
+        getTokensNumberInRepr      $_dataset $_prep_name    result $_long_option; _n_tokens="${result}"
+        
+        _str="$_str $_prep_name $_performed_preps $_n_tokens\n" 
+    done
+    echo -e $_str | column -t
+    echo    
+}
+
+
+function checkVarInConf {
+    local VAR_NAME="$1"
+    if [ -z "${!VAR_NAME}" ]; then
+        echo "$VAR_NAME variable is not found in .conf file"
+        exit 1
+    fi
+}
+
+function checkDirExists {
+    local VAR_NAME="$1"
+    if [ ! -d "${!VAR_NAME}" ]; then
+        echo "Directory specified as $VAR_NAME (${$VAR_NAME}) does not exist"
+        exit 2
+    fi
+}
+
+if [ x"$1" == x"-l" ]; then
+    long_option="-l"
+    shift 1
+fi
+
+if [ x"$1" == x"-ll" ]; then
+    long_option="-ll"
+    shift 1
+fi
+
+if [ -n "$1" ]; then
+    DATASET="$1"
+fi
+
+checkVarInConf RAW_DATASETS_DIR
+checkVarInConf RAW_DATASETS_METADATA_DIR
+checkVarInConf PARSED_DATASETS_DIR
+checkVarInConf PREPROCESSING_TYPES
+
+checkDirExists RAW_DATASETS_DIR
+checkDirExists RAW_DATASETS_METADATA_DIR
+checkDirExists PARSED_DATASETS_DIR
+
+if [ -n "$DATASET" ]; then
+    displayDatasetInfoVerbose "$DATASET" "$long_option"
+else
+    echo -e "Raw datasets: (Location: $RAW_DATASETS_DIR)\n"
+    datasets_info=""
+    if [[ -n "$long_option" ]]; then
+        datasets_info="-|- projects file tokens\n"
+    fi
+    for dir in $RAW_DATASETS_DIR/*; do
+        dir_basename=$(basename $dir)
+        displayDatasetInfo "$dir_basename" result "$long_option"; dataset_info=${result}
+        datasets_info="${datasets_info}${dataset_info}\n"
+    done
+    echo -e "${datasets_info}" | column -t
+    echo
+fi
