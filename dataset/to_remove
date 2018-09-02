@@ -1,8 +1,0 @@
-function a {
-echo "Counting number of projects for $_dataset_name ..."
-_n_projects=$(find "$(pwd)/../../.." -mindepth 2  -type d | wc -l)
-}
-
-a
-
-
