@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+#------------------------------------------------------------------------------------
+set -e  # Fail on first error
+
+# Some useful global variables and constants
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+SCRIPT_NAME="$0"
+
+source $CURRENT_DIR/../.conf
+source $CURRENT_DIR/../log4bash.sh
+source $CURRENT_DIR/../util.sh
+#-----------------------------------------------------------------------------------
+
+DATASET_NAME="$1"
+REPR_NAME="$2"
+
+checkVarInConf PARSED_DATASETS_DIR
+checkVarInConf PATH_TO_PARAMS
+
+path_to_dataset=${PARSED_DATASETS_DIR}/${DATASET_NAME}/repr/${REPR_NAME}
+run_id=$(date +%s)
+params_file_path="${PATH_TO_PARAMS}/params_${run_id}.py"
+build_vocab_file_path="${HOME}/build_vocab_${run_id}.slrm"
+
+#Creating files from templates
+sed -e "s/<path_to_dataset>/\$path_to_dataset/" ${CURRENT_DIR}/../.templates/params.py        > ${params_file_path}
+sed -e "s/<run_id>/\$run_id/"                   ${CURRENT_DIR}/../.templates/build_vocab.slrm > ${build_vocab_file_path}
+
+#sbatch ${build_vocab_file_path} 
+
+vocab_size_file_path="${path_to_dataset}/vocab_size"
+
+waitUntilFileIsCreated() {
+    if [[ ! -f "$vocab_size_file_path" ]]; then
+        sleep 30
+        waitUntilFileIsCreated
+    fi
+} 
+
+waitUntilFileIsCreated
+
+echo "Vocabulary is calculated. Cleaning up..."
+
+echo "Removing $params_file_path"
+rm "$params_file_path"
+
+echo "Removing $build_vocab_file_path"
+rm "$build_vocab_file_path"

@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+#------------------------------------------------------------------------------------
+set -e  # Fail on first error
+# Some useful global variables and constants
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+SCRIPT_NAME="$0"
+
+source $CURRENT_DIR/../.conf
+source $CURRENT_DIR/../log4bash.sh
+source $CURRENT_DIR/../util.sh
+
+AUTOGEN_TPL="# This is automatically generated file! Do not edit!"
+#-----------------------------------------------------------------------------------
+# Checking configuration
+
+checkVarInConf RAW_DATASETS_DIR
+checkVarInConf RAW_DATASETS_METADATA_DIR
+checkVarInConf PARSED_DATASETS_DIR
+
+#-----------------------------------------------------------------
+#Checking input data
+
+DATASET_TO_REMOVE="$1"
+if [[ -z ${DATASET_TO_REMOVE} ]]; then
+    # TODO: usage
+    echo "Specify dataset to remove!"
+    exit 1
+fi
+
+set +e
+${CURRENT_DIR}/ls ${DATASET_TO_REMOVE} > /dev/null
+LS_EXIT_STATUS=$?
+set -e
+
+if [[ ${LS_EXIT_STATUS} -eq 44 ]]; then
+    echo "Unknown dataset: ${DATASET_TO_REMOVE}"
+    exit 2
+fi
+#----------------------------------------------------------------
+
+echo -e "The following files and directories will be removed:"
+
+pathes_to_remove=(
+${RAW_DATASETS_DIR}/${DATASET_TO_REMOVE} 
+${RAW_DATASETS_METADATA_DIR}/${DATASET_TO_REMOVE}
+${PARSED_DATASETS_DIR}/${DATASET_TO_REMOVE}
+)
+
+for path in "${pathes_to_remove[@]}"; do
+    printRed "$path"
+done
+
+read -r -p 'Are you sure? [y/N] ' response
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
+then
+    for path in "${pathes_to_remove[@]}"; do
+        mvt "$path"
+    done    
+fi

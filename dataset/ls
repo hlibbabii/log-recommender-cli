@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 
 #------------------------------------------------------------------------------------
@@ -9,19 +10,11 @@ SCRIPT_NAME="$0"
 
 source $CURRENT_DIR/../.conf
 source $CURRENT_DIR/../log4bash.sh
+source $CURRENT_DIR/../util.sh
 
 AUTOGEN_TPL="# This is automatically generated file! Do not edit!"
 #------------------------------------------------------------------------------------
 
-printRed() {
-    echo -e "\e[31m${1}\e[39m"
-}
-
-printGreen() {
-    echo -e "\e[32m${1}\e[39m"
-}
-
-#------------------------------------------------------------------------------------
 getProjectsNumber() {
     local _dataset_name="$1"
     local _result_var_name="$2"
@@ -60,6 +53,7 @@ getFilesNumber() {
     printf -v "$_result_var_name" '%s' "$_n_files"
 }
 
+#TODO merge two methods below to avoid code duplication
 getTokensNumber() {
     local _dataset_name="$1"
     local _result_var_name="$2"
@@ -110,6 +104,11 @@ displayDatasetInfo() {
 
     local _str="$_dataset_name"
     if [ -n "$_long_option" ]; then
+        if [ ! -d "$RAW_DATASETS_METADATA_DIR/$_dataset_name" ]; then
+            echo "Dataset metadata dir for $_dataset_name does not exist. Creating one..." 
+            mkdir "$RAW_DATASETS_METADATA_DIR/$_dataset_name"
+        fi
+
         getProjectsNumber "$_dataset_name" result "$_long_option"; local _n_projects=${result} 
         getFilesNumber    "$_dataset_name" result "$_long_option"; local _n_files=${result}
         getTokensNumber   "$_dataset_name" result "$_long_option"; local _n_tokens=${result}
@@ -139,12 +138,11 @@ getPerformedPreps() {
     for prep_type in "${PREPROCESSING_TYPES[@]}"; do
         local _val=$(cat "$_prep_loc/preprocessing_types.json" | jq -r ".$prep_type")
         if [ x"$_val" == x"true" ]; then
-            _str="$_str $( printGreen 1 )"
+            _str="${_str}$(printGreen 1) "
         else
-            _str="$_str $( printRed 0 )"
+            _str="${_str}$(printRed 0) "
         fi
     done
-
     printf -v "$_result_var_name" '%s' "$_str"
 }
 
@@ -156,7 +154,7 @@ displayDatasetInfoVerbose() {
         echo "$RAW_DATASETS_DIR/$_dataset"
         echo -e "Dataset $_dataset does not exist"
         $CURRENT_DIR/$SCRIPT_NAME
-        exit 0
+        exit 44
     fi
 
     displayGeneralDatasetInfoVerbose $_dataset
@@ -168,37 +166,21 @@ displayDatasetInfoVerbose() {
     for prep_type in "${PREPROCESSING_TYPES[@]}"; do
         _str="$_str $prep_type"
     done
-    _str="$_str tokens \n"
+    _str="$_str tokens"
+    _str="$_str \n"
     for _prep_loc in $_all_preps_loc/*; do
         local _prep_name="$(basename $_prep_loc)"
         if [ "$_prep_name" == "*" ]; then
             continue
         fi
         
-        getPerformedPreps $_prep_loc                        result              ; _performed_preps="${result}"
-        getTokensNumberInRepr      $_dataset $_prep_name    result $_long_option; _n_tokens="${result}"
-        
-        _str="$_str $_prep_name $_performed_preps $_n_tokens\n" 
+        getPerformedPreps        $_prep_loc               result                ; _performed_preps="${result}"
+        getTokensNumberInRepr    $_dataset $_prep_name    result   $_long_option; _n_tokens="${result}"
+ 
+        _str="$_str $_prep_name ${_performed_preps}$_n_tokens \n" 
     done
     echo -e $_str | column -t
     echo    
-}
-
-
-function checkVarInConf {
-    local VAR_NAME="$1"
-    if [ -z "${!VAR_NAME}" ]; then
-        echo "$VAR_NAME variable is not found in .conf file"
-        exit 1
-    fi
-}
-
-function checkDirExists {
-    local VAR_NAME="$1"
-    if [ ! -d "${!VAR_NAME}" ]; then
-        echo "Directory specified as $VAR_NAME (${$VAR_NAME}) does not exist"
-        exit 2
-    fi
 }
 
 if [ x"$1" == x"-l" ]; then

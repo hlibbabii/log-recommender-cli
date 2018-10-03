@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+#------------------------------------------------------------------------------------
+set -e  # Fail on first error
+# Some useful global variables and constants
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+SCRIPT_NAME="$0"
+
+source $CURRENT_DIR/../.conf
+source $CURRENT_DIR/../log4bash.sh
+source $CURRENT_DIR/../util.sh
+source /home/lv71161/hlibbabii/anaconda3/etc/profile.d/conda.sh
+#-----------------------------------------------------------------------------------
+# Checking configuration
+
+checkVarInConf RAW_DATASETS_DIR
+checkVarInConf RAW_DATASETS_METADATA_DIR
+checkVarInConf PARSED_DATASETS_DIR
+
+checkVarInConf PATH_TO_PYTHON_PROJECT
+#-----------------------------------------------------------------
+#Checking input data
+
+DATASET="$1"
+if [[ -z ${DATASET} ]]; then
+    # TODO: usage
+    echo "Specify the dataset!"
+    exit 1
+fi
+
+set +e
+${CURRENT_DIR}/ls ${DATASET} > /dev/null
+LS_EXIT_STATUS=$?
+set -e
+
+if [[ ${LS_EXIT_STATUS} -eq 44 ]]; then
+    echo "Unknown dataset: ${DATASET}"
+    exit 2
+fi
+#----------------------------------------------------------------
+
+cd ${PATH_TO_PYTHON_PROJECT}
+conda activate fastai
+
+parsed_dataset_dir="${PARSED_DATASETS_DIR}/${DATASET}"
+if [[ ! -d "${parsed_dataset_dir}" ]]; then
+    mkdir "${parsed_dataset_dir}"
+fi
+
+if [[ ! -d "${parsed_dataset_dir}/metadata" ]]; then
+    mkdir "${parsed_dataset_dir}/metadata"
+fi
+
+double_quote='"'
+PYTHON_CMD="python dataprep/parse_projects.py --base-from ${RAW_DATASETS_DIR} --base-to ${PARSED_DATASETS_DIR} ${DATASET} ${DATASET}/parsed"
+CMD="${PYTHON_CMD} --  >${parsed_dataset}/parsed.log 2>&1"
+echo "Running the following command:"
+printGreen "${CMD}"
+${CMD}
