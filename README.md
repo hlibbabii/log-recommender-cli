@@ -1,7 +1,6 @@
 # log-recommender-cli
 
 ## Supported commands
-logrec **dataset**
 
 ### View datasets
 
@@ -67,3 +66,10 @@ logrec dataset preprocess <dataset name>
 ```
 
 Builds a preprocesssed representation of a dataset from the corresponding parsed dataset.
+
+
+### Building a vocabulary
+
+```shell
+logrec vocab build <dataset name>
+```
