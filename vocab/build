@@ -16,11 +16,11 @@ DATASET_NAME="$1"
 REPR_NAME="$2"
 
 checkVarInConf PARSED_DATASETS_DIR
-checkVarInConf PATH_TO_PARAMS
+checkVarInConf PATH_TO_LANGMODEL_PARAMS
 
 path_to_dataset=${PARSED_DATASETS_DIR}/${DATASET_NAME}/repr/${REPR_NAME}
 run_id=$(date +%s)
-params_file_path="${PATH_TO_PARAMS}/params_${run_id}.py"
+params_file_path="${PATH_TO_LANGMODEL_PARAMS}/params_${run_id}.py"
 build_vocab_file_path="${HOME}/build_vocab_${run_id}.slrm"
 
 #Creating files from templates
