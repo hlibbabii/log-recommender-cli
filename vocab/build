@@ -24,15 +24,26 @@ params_file_path="${PATH_TO_PARAMS}/params_${run_id}.py"
 build_vocab_file_path="${HOME}/build_vocab_${run_id}.slrm"
 
 #Creating files from templates
-sed -e "s/<path_to_dataset>/\$path_to_dataset/" ${CURRENT_DIR}/../.templates/params.py        > ${params_file_path}
-sed -e "s/<run_id>/\$run_id/"                   ${CURRENT_DIR}/../.templates/build_vocab.slrm > ${build_vocab_file_path}
+sed -e "s|<path_to_dataset>|${path_to_dataset}|" ${CURRENT_DIR}/../.templates/params.py        > ${params_file_path}
+sed -e "s|<run_id>|${run_id}|"                   ${CURRENT_DIR}/../.templates/build_vocab.slrm > ${build_vocab_file_path}
 
-#sbatch ${build_vocab_file_path} 
+echo "Contents of params file ($params_file_path):"
+echo "==============================================="
+cat ${params_file_path}
+echo "==============================================="
+echo ""
+echo "Contents of slurm build file ($build_vocab_file_path):"
+echo "==============================================="
+cat ${build_vocab_file_path}
+echo "==============================================="
+
+sbatch ${build_vocab_file_path} 
 
 vocab_size_file_path="${path_to_dataset}/vocab_size"
 
 waitUntilFileIsCreated() {
     if [[ ! -f "$vocab_size_file_path" ]]; then
+        echo "..."
         sleep 30
         waitUntilFileIsCreated
     fi
