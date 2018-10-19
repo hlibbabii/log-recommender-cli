@@ -2,8 +2,8 @@
 #SBATCH -J r<run_id>
 #SBATCH -N 1
 #SBATCH --time=4:00:00
-#SBATCH --qos=gpu_gtx1080multi
-#SBATCH --partition=gpu_gtx1080multi
+#SBATCH --qos=gpu_gtx1080single
+#SBATCH --partition=gpu_gtx1080single
 #SBATCH --mail-user=hlibbabii@gmail.com
 #SBATCH --mail-type=BEGIN,END
 
