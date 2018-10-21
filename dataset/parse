@@ -17,7 +17,7 @@ checkVarInConf RAW_DATASETS_DIR
 checkVarInConf RAW_DATASETS_METADATA_DIR
 checkVarInConf PARSED_DATASETS_DIR
 
-checkVarInConf PATH_TO_PYTHON_PROJECT
+checkVarInConf PATH_TO_PROJECT
 #-----------------------------------------------------------------
 #Checking input data
 
