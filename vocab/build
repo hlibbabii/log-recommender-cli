@@ -16,34 +16,14 @@ DATASET_NAME="$1"
 REPR_NAME="$2"
 
 checkVarInConf PARSED_DATASETS_DIR
-checkVarInConf PATH_TO_LANGMODEL_PARAMS
+checkVarInConf PATH_TO_PYTHON_PROJECT
 
 path_to_dataset=${PARSED_DATASETS_DIR}/${DATASET_NAME}/repr/${REPR_NAME}
-run_id=$(date +%s)
-params_file_path="${PATH_TO_LANGMODEL_PARAMS}/params_${run_id}.py"
-build_vocab_file_path="${HOME}/build_vocab_${run_id}.slrm"
 
-#Creating files from templates
-sed -e "s/<path_to_dataset>/\$path_to_dataset/" ${CURRENT_DIR}/../.templates/params.py        > ${params_file_path}
-sed -e "s/<run_id>/\$run_id/"                   ${CURRENT_DIR}/../.templates/build_vocab.slrm > ${build_vocab_file_path}
+cd ${PATH_TO_PYTHON_PROJECT}
+conda activate fastai
 
-#sbatch ${build_vocab_file_path} 
-
-vocab_size_file_path="${path_to_dataset}/vocab_size"
-
-waitUntilFileIsCreated() {
-    if [[ ! -f "$vocab_size_file_path" ]]; then
-        sleep 30
-        waitUntilFileIsCreated
-    fi
-} 
-
-waitUntilFileIsCreated
-
-echo "Vocabulary is calculated. Cleaning up..."
-
-echo "Removing $params_file_path"
-rm "$params_file_path"
-
-echo "Removing $build_vocab_file_path"
-rm "$build_vocab_file_path"
+CMD="python logrec/dataprep/vocabsize.py --base-from ${PARSED_DATASETS_DIR} ${path_to_dataset}"
+echo "Running the following command:"
+printGreen "${CMD}"
+${CMD}
