@@ -112,9 +112,8 @@ getVocabSize() {
             log_debug "Looking at $_parsed_dataset_dir/repr/$_repr_name"
 
             cd ${PATH_TO_PROJECT}
-            conda activate fastai
 
-            local _cmd="python logrec/dataprep/vocabsize.py --base-from ${PARSED_DATASETS_DIR} ${_dataset_name} ${_repr_name}"
+            local _cmd="${PYTHON} logrec/dataprep/vocabsize.py --base-from ${PARSED_DATASETS_DIR} ${_dataset_name} ${_repr_name}"
             echo "Running the following command:"
             printGreen "${_cmd}"
             ${_cmd}
@@ -234,6 +233,7 @@ checkVarInConf RAW_DATASETS_METADATA_DIR
 checkVarInConf PARSED_DATASETS_DIR
 checkVarInConf PREPROCESSING_TYPES
 checkVarInConf PATH_TO_PROJECT
+checkVarInConf PYTHON
 
 checkDirExists RAW_DATASETS_DIR
 checkDirExists RAW_DATASETS_METADATA_DIR
