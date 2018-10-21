@@ -97,6 +97,36 @@ getTokensNumberInRepr() {
     printf -v "$_result_var_name" '%s' "$_n_tokens"
 }
 
+getVocabSize() {
+    local _dataset_name="$1"
+    local _repr_name="$2"
+    local _result_var_name="$3"
+
+    local _parsed_dataset_dir="$PARSED_DATASETS_DIR/$_dataset_name"
+    local _vocabsize_file="$_parsed_dataset_dir/metadata/$_repr_name/vocabsize"
+    local _vocab_size="UNK"
+
+    if [[ ! -f "$_vocabsize_file" ]]; then
+        if [[ "$_long_option" == "-ll" ]]; then
+            log_info "Calculating vocabulary size in $_dataset_name ... It may take a while ..."
+            log_debug "Looking at $_parsed_dataset_dir/repr/$_repr_name"
+
+            cd ${PATH_TO_PROJECT}
+            conda activate fastai
+
+            local _cmd="python logrec/dataprep/vocabsize.py --base-from ${PARSED_DATASETS_DIR} ${_dataset_name} ${_repr_name}"
+            echo "Running the following command:"
+            printGreen "${_cmd}"
+            ${_cmd}
+            cd -
+        fi
+    else
+        _n_tokens=$(head -n 1 $_vocabsize_file | awk '{print $1}')
+    fi
+
+    printf -v "$_result_var_name" '%s' "$_vocabsize"
+}
+
 displayDatasetInfo() {
     local _dataset_name="$1"
     local _result_var_name="$2"
@@ -167,6 +197,7 @@ displayDatasetInfoVerbose() {
         _str="$_str $prep_type"
     done
     _str="$_str tokens"
+    _str="$_str vocabsize"
     _str="$_str \n"
     for _prep_loc in $_all_preps_loc/*; do
         local _prep_name="$(basename $_prep_loc)"
@@ -176,6 +207,7 @@ displayDatasetInfoVerbose() {
         
         getPerformedPreps        $_prep_loc               result                ; _performed_preps="${result}"
         getTokensNumberInRepr    $_dataset $_prep_name    result   $_long_option; _n_tokens="${result}"
+        getVocabSize             $_dataset $_prep_name    result   $_long_option; _vocabsize="${result}"
  
         _str="$_str $_prep_name ${_performed_preps}$_n_tokens \n" 
     done
@@ -201,6 +233,7 @@ checkVarInConf RAW_DATASETS_DIR
 checkVarInConf RAW_DATASETS_METADATA_DIR
 checkVarInConf PARSED_DATASETS_DIR
 checkVarInConf PREPROCESSING_TYPES
+checkVarInConf PATH_TO_PROJECT
 
 checkDirExists RAW_DATASETS_DIR
 checkDirExists RAW_DATASETS_METADATA_DIR
