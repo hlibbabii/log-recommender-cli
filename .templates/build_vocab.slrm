@@ -2,8 +2,8 @@
 #SBATCH -J r<run_id>
 #SBATCH -N 1
 #SBATCH --time=4:00:00
-#SBATCH --qos=gpu_gtx1080multi
-#SBATCH --partition=gpu_gtx1080multi
+#SBATCH --qos=gpu_gtx1080single
+#SBATCH --partition=gpu_gtx1080single
 #SBATCH --mail-user=hlibbabii@gmail.com
 #SBATCH --mail-type=BEGIN,END
 
@@ -13,5 +13,5 @@ module load cuda
 PYTHON="/home/lv71161/hlibbabii/anaconda3/envs/fastai/bin/python"
 
 echo "Python is $PYTHON"
-cd $HOME/log-recommender/log_recommender
-$PYTHON -u nn/lang_model.py param<run_id> >/home/lv71161/hlibbabii/vocab_strcom_eng_100percent 2>&1
+cd $HOME/log-recommender
+$PYTHON -u logrec/langmodel/lang_model.py logrec.langmodel.params_<run_id> >/home/lv71161/hlibbabii/vocab_building_log_<run_id> 2>&1

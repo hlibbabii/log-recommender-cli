@@ -1,3 +1,5 @@
+from logrec.langmodel.lang_model import Mode
+
 nn_params = {
     'path_to_data': '<path_to_dataset>',
     'dataset_name': '',
@@ -23,5 +25,5 @@ nn_params = {
         'how_many_words': 0,
         'starting_words': ""
     },
-    'mode': "vocab_building"
+    'mode': Mode.VOCAB_BUILDING
 }
