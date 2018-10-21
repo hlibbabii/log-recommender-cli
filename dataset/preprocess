@@ -15,7 +15,7 @@ source /home/lv71161/hlibbabii/anaconda3/etc/profile.d/conda.sh
 
 checkVarInConf PARSED_DATASETS_DIR
 
-checkVarInConf PATH_TO_PYTHON_PROJECT
+checkVarInConf PATH_TO_PROJECT
 
 checkVarInConf PREPROCESSING_TYPES
 checkVarInConf DEFAULT_PREPROCESSING_TYPE_VALUES
@@ -61,11 +61,11 @@ done
 pp=${pp: : -1}
 #---------------------------------------------------------------
 
-cd ${PATH_TO_PYTHON_PROJECT}
+cd ${PATH_TO_PROJECT}
 conda activate fastai
 
 
-PYTHON_CMD="python dataprep/to_repr.py"
+PYTHON_CMD="python logrec/dataprep/to_repr.py"
 PYTHON_CMD="$PYTHON_CMD --base-from ${PARSED_DATASETS_DIR} --base-to ${PARSED_DATASETS_DIR}"
 PYTHON_CMD="$PYTHON_CMD --preprocessing-types $pp"
 PYTHON_CMD="$PYTHON_CMD ${DATASET}/parsed ${DATASET}"
