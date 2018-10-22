@@ -104,7 +104,7 @@ getVocabSize() {
 
     local _parsed_dataset_dir="$PARSED_DATASETS_DIR/$_dataset_name"
     local _vocabsize_file="$_parsed_dataset_dir/metadata/$_repr_name/vocabsize"
-    local _vocab_size="UNK"
+    local _vocabsize="UNK"
 
     if [[ ! -f "$_vocabsize_file" ]]; then
         if [[ "$_long_option" == "-ll" ]]; then
@@ -118,9 +118,10 @@ getVocabSize() {
             printGreen "${_cmd}"
             ${_cmd}
             cd -
+            _vocabsize=$(head -n 1 $_vocabsize_file | awk '{print $1}')
         fi
     else
-        _n_tokens=$(head -n 1 $_vocabsize_file | awk '{print $1}')
+        _vocabsize=$(head -n 1 $_vocabsize_file | awk '{print $1}')
     fi
 
     printf -v "$_result_var_name" '%s' "$_vocabsize"
@@ -191,7 +192,7 @@ displayDatasetInfoVerbose() {
     local _all_preps_loc="$PARSED_DATASETS_DIR/$_dataset/repr"
     echo "Preprocessings:   (Location: $_all_preps_loc)"
     echo
-    local _str="-|-"
+    local _str="-|------------"
     for prep_type in "${PREPROCESSING_TYPES[@]}"; do
         _str="$_str $prep_type"
     done
@@ -208,7 +209,7 @@ displayDatasetInfoVerbose() {
         getTokensNumberInRepr    $_dataset $_prep_name    result   $_long_option; _n_tokens="${result}"
         getVocabSize             $_dataset $_prep_name    result   $_long_option; _vocabsize="${result}"
  
-        _str="$_str $_prep_name ${_performed_preps}$_n_tokens \n" 
+        _str="$_str $_prep_name ${_performed_preps} $_n_tokens $_vocabsize\n" 
     done
     echo -e $_str | column -t
     echo    
