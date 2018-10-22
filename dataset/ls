@@ -80,7 +80,7 @@ getTokensNumberInRepr() {
     local _result_var_name="$3"
     local _long_option="$4"
     
-    local _parsed_dataset_dir="$PARSED_DATASETS_DIR/$DATASET_NAME"
+    local _parsed_dataset_dir="$PARSED_DATASETS_DIR/$_dataset_name"
     local _n_tokens_file="$_parsed_dataset_dir/metadata/$_repr_name/n_tokens"
     local _n_tokens="UNK"
     if [[ ! -f "$_n_tokens_file" ]]; then
@@ -111,7 +111,7 @@ getVocabSize() {
             cd ${PATH_TO_PROJECT}
 
             local _cmd="${PYTHON} logrec/dataprep/vocabsize.py --base-from ${PARSED_DATASETS_DIR} ${_dataset_name} ${_repr_name}"
-            echo "Running the following command:"
+            log_info "Running the following command:"
             printGreen "${_cmd}"
             ${_cmd}
             cd -
