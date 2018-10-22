@@ -80,16 +80,13 @@ getTokensNumberInRepr() {
     local _result_var_name="$3"
     local _long_option="$4"
     
-    local _parsed_dataset_dir="$PARSED_DATASETS_DIR/$_dataset_name"
+    local _parsed_dataset_dir="$PARSED_DATASETS_DIR/$DATASET_NAME"
     local _n_tokens_file="$_parsed_dataset_dir/metadata/$_repr_name/n_tokens"
     local _n_tokens="UNK"
     if [[ ! -f "$_n_tokens_file" ]]; then
         if [[ "$_long_option" == "-ll" ]]; then
-            log_info "Counting number of tokens in $_dataset_name ... It may take a while ..."
-            log_debug "Looking at $_parsed_dataset_dir/repr/$_repr_name"
-            _n_tokens=$( find "$_parsed_dataset_dir/repr/$_repr_name" -mindepth 2 -type f -name "*.repr" -exec wc -w {} + \
-                                                                                                   | awk '/total/{print $1}' | paste -sd+ | bc )
-            echo -e "${AUTOGEN_TPL}\n${_n_tokens}" > ${_n_tokens_file}
+            $CURRENT_DIR/wc $_dataset_name $_repr_name
+            _n_tokens=$(tail -n 1 $_n_tokens_file)
         fi
     else
         _n_tokens=$(tail -n 1 $_n_tokens_file)
@@ -127,7 +124,7 @@ getVocabSize() {
 }
 
 displayDatasetInfo() {
-    local _dataset_name="$1"
+;    local _dataset_name="$1"
     local _result_var_name="$2"
     local _long_option="$3"
 
