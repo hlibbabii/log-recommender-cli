@@ -16,14 +16,13 @@ DATASET_NAME="$1"
 REPR_NAME="$2"
 
 checkVarInConf PARSED_DATASETS_DIR
-checkVarInConf PATH_TO_PYTHON_PROJECT
+checkVarInConf PATH_TO_PROJECT
 
-path_to_dataset=${PARSED_DATASETS_DIR}/${DATASET_NAME}/repr/${REPR_NAME}
-
-cd ${PATH_TO_PYTHON_PROJECT}
+cd ${PATH_TO_PROJECT}
 conda activate fastai
 
-CMD="python logrec/dataprep/vocabsize.py --base-from ${PARSED_DATASETS_DIR} ${path_to_dataset}"
+CMD="python logrec/dataprep/vocabsize.py --base-from ${PARSED_DATASETS_DIR} ${DATASET_NAME} ${REPR_NAME}"
 echo "Running the following command:"
 printGreen "${CMD}"
 ${CMD}
+cd -
