@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+#------------------------------------------------------------------------------------
+set -e  # Fail on first error
+
+# Some useful global variables and constants
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+SCRIPT_NAME="$0"
+
+source $CURRENT_DIR/../.conf
+source $CURRENT_DIR/../log4bash.sh
+source $CURRENT_DIR/../util.sh
+#-----------------------------------------------------------------------------------
+
+DATASET_NAME="$1"
+REPR_NAME="$2"
+
+checkVarInConf PARSED_DATASETS_DIR
+
+local _parsed_dataset_dir="$PARSED_DATASETS_DIR/$DATASET_NAME"
+local _n_tokens_file="$_parsed_dataset_dir/metadata/$REPR_NAME/n_tokens"
+
+log_info "Counting number of tokens in $_parsed_dataset_dir/repr/$REPR_NAME" ... It may take a while ..."
+_n_tokens=$( find "$_parsed_dataset_dir/repr/$REPR_NAME" -mindepth 2 -type f -name "*.repr" -exec wc -w {} + \
+                                                                                       | awk '/total/{print $1}' | paste -sd+ | bc )
+echo -e "${AUTOGEN_TPL}\n${_n_tokens}" > ${_n_tokens_file}
+echo "${_n_tokens}"
