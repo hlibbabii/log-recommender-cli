@@ -125,7 +125,7 @@ getVocabSize() {
 }
 
 displayDatasetInfo() {
-;    local _dataset_name="$1"
+    local _dataset_name="$1"
     local _result_var_name="$2"
     local _long_option="$3"
 
