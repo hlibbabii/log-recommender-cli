@@ -20,8 +20,8 @@ checkVarInConf PARSED_DATASETS_DIR
 _parsed_dataset_dir="$PARSED_DATASETS_DIR/$DATASET_NAME"
 _n_tokens_file="$_parsed_dataset_dir/metadata/$REPR_NAME/n_tokens"
 
-log_info "Counting number of tokens in $_parsed_dataset_dir/repr/$REPR_NAME ... It may take a while ..."
-_n_tokens=$( find "$_parsed_dataset_dir/repr/$REPR_NAME" -mindepth 2 -type f -name "*.repr" -exec wc -w {} + \
+log_info "Counting number of tokens in $_parsed_dataset_dir/repr/$REPR_NAME/train ... It may take a while ..."
+_n_tokens=$( find "$_parsed_dataset_dir/repr/$REPR_NAME/train/" -mindepth 1 -type f -name "*.repr" -exec wc -w {} + \
                                                                                        | awk '/total/{print $1}' | paste -sd+ | bc )
 echo -e "${AUTOGEN_TPL}\n${_n_tokens}" > ${_n_tokens_file}
 echo "${_n_tokens}"
