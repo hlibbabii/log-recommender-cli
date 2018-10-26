@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+
+#------------------------------------------------------------------------------------
+set -e  # Fail on first error
+
+# Some useful global variables and constants
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+SCRIPT_NAME="$0"
+
+source $CURRENT_DIR/../.conf
+source $CURRENT_DIR/../log4bash.sh
+source $CURRENT_DIR/../util.sh
+
+#------------------------------------------------------------------------------------
+
+#-------TODO!! This functions above are copied as they are. Remove code duplication
+displayGeneralDatasetInfoVerbose() {
+    local _dataset="$1"
+    echo
+    echo "$_dataset  (Location $RAW_DATASETS_DIR/$_dataset)"
+    if [ -d "$PARSED_DATASETS_DIR/$_dataset/parsed" ]; then
+        printGreen "parsed"
+    else
+        printRed "not parsed"
+    fi
+    echo
+}
+
+getTokensNumberInRepr() {
+    local _dataset_name="$1"
+    local _repr_name="$2"
+    local _result_var_name="$3"
+    local _long_option="$4"
+
+    local _parsed_dataset_dir="$PARSED_DATASETS_DIR/$_dataset_name"
+    local _n_tokens_file="$_parsed_dataset_dir/metadata/$_repr_name/n_tokens"
+    local _n_tokens="UNK"
+    if [[ ! -f "$_n_tokens_file" ]]; then
+        if [[ "$_long_option" == "-ll" ]]; then
+            $CURRENT_DIR/wc $_dataset_name $_repr_name
+            _n_tokens=$(tail -n 1 $_n_tokens_file)
+        fi
+    else
+        _n_tokens=$(tail -n 1 $_n_tokens_file)
+    fi
+    printf -v "$_result_var_name" '%s' "$_n_tokens"
+}
+
+getVocabSize() {
+    local _dataset_name="$1"
+    local _repr_name="$2"
+    local _result_var_name="$3"
+
+    local _parsed_dataset_dir="$PARSED_DATASETS_DIR/$_dataset_name"
+    local _vocabsize_file="$_parsed_dataset_dir/metadata/$_repr_name/vocabsize"
+    local _vocabsize="UNK"
+
+    if [[ ! -f "$_vocabsize_file" ]]; then
+        if [[ "$_long_option" == "-ll" ]]; then
+            log_info "Calculating vocabulary size in $_dataset_name ... It may take a while ..."
+            log_debug "Looking at $_parsed_dataset_dir/repr/$_repr_name"
+
+            cd ${PATH_TO_PROJECT}
+
+            local _cmd="${PYTHON} logrec/dataprep/vocabsize.py --base-from ${PARSED_DATASETS_DIR} ${_dataset_name} ${_repr_name}"
+            log_info "Running the following command:"
+            printGreen "${_cmd}"
+            ${_cmd}
+            cd -
+            _vocabsize=$(head -n 1 $_vocabsize_file | awk '{print $1}')
+        fi
+    else
+        _vocabsize=$(head -n 1 $_vocabsize_file | awk '{print $1}')
+    fi
+
+    printf -v "$_result_var_name" '%s' "$_vocabsize"
+}
+
+#----------------------------------
+
+getReducedVocabSize() {
+    local _dataset_name="$1"
+    local _repr_name="$2"
+    local _result_var_name1="$3"
+    local _result_var_name2="$4"
+    local _min_quantity="$5"
+
+    local _parsed_dataset_dir="$PARSED_DATASETS_DIR/$_dataset_name"
+    local _vocab_file="$_parsed_dataset_dir/metadata/$_repr_name/vocab"
+
+    _vocab_size=$(wc -l $_vocab_file | awk -e '{print $1}')
+    _reduced_vocabsize=$_vocab_size
+    _n_tokens=$(cat $_vocab_file |awk -e '{sum += $2} END {print sum}')
+    _reduced_n_tokens=0
+    for (( i = 1; i < $_min_quantity; i++ )) 
+    do 
+        local _vocab_reduced=$(grep " $i\$" $_vocab_file | wc -l)
+        _reduced_vocabsize=$((_reduced_vocabsize-_vocab_reduced))
+        _reduced_n_tokens=$((_reduced_n_tokens+i*_vocab_reduced))
+    done
+    local _percent=$(echo "$_reduced_n_tokens / $_n_tokens * 100" | bc -l)
+
+    printf -v "$_result_var_name1" '%s' "$_reduced_vocabsize"
+    printf -v "$_result_var_name2" '%s(%.3f%%)' "$_reduced_n_tokens" ""$_percent
+}
+
+displayOov() {
+    local _dataset="$1"
+
+    if [[ ! -d "$RAW_DATASETS_DIR/$_dataset" ]]; then
+        echo "$RAW_DATASETS_DIR/$_dataset"
+        echo -e "Dataset $_dataset does not exist"
+        $CURRENT_DIR/$SCRIPT_NAME
+        exit 44
+    fi
+
+    displayGeneralDatasetInfoVerbose $_dataset
+
+    local _all_preps_loc="$PARSED_DATASETS_DIR/$_dataset/repr"
+    echo "Preprocessings:   (Location: $_all_preps_loc)"
+    echo
+    local _str="-|------------"
+    _str="$_str vocabsize"
+    _str="$_str n_tokens"
+    _str="$_str >=2 >=2 >=3 >=3 >=4 >=4 >=5 >=5"
+    _str="$_str \n"
+    for _prep_loc in $_all_preps_loc/*; do
+        local _prep_name="$(basename $_prep_loc)"
+        if [ "$_prep_name" == "*" ]; then
+            continue
+        fi
+
+        getVocabSize             $_dataset $_prep_name    result   $_long_option; _vocabsize="${result}"
+        getTokensNumberInRepr    $_dataset $_prep_name    result   $_long_option; _n_tokens="${result}"
+
+        _str="$_str $_prep_name $_vocabsize $_n_tokens"
+
+        getReducedVocabSize $_dataset $_prep_name result1 result2 2; _reduced_vocabsize="${result1}"; _reduced_n_tokens="${result2}"
+        
+        _str="$_str $_reduced_vocabsize $_reduced_n_tokens"
+
+        getReducedVocabSize $_dataset $_prep_name result1 result2 3; _reduced_vocabsize="${result1}"; _reduced_n_tokens="${result2}"
+
+        _str="$_str $_reduced_vocabsize $_reduced_n_tokens"
+
+        getReducedVocabSize $_dataset $_prep_name result1 result2 4; _reduced_vocabsize="${result1}"; _reduced_n_tokens="${result2}"
+
+        _str="$_str $_reduced_vocabsize $_reduced_n_tokens"
+
+        getReducedVocabSize $_dataset $_prep_name result1 result2 5; _reduced_vocabsize="${result1}"; _reduced_n_tokens="${result2}"
+
+        _str="$_str $_reduced_vocabsize $_reduced_n_tokens\n"
+        
+    done
+    echo -e $_str | column -t
+    echo
+}
+
+if [ -n "$1" ]; then
+    DATASET="$1"
+fi
+
+checkVarInConf RAW_DATASETS_DIR
+checkVarInConf PARSED_DATASETS_DIR
+
+checkDirExists RAW_DATASETS_DIR
+checkDirExists PARSED_DATASETS_DIR
+
+displayOov $DATASET
