@@ -156,9 +156,12 @@ displayOov() {
     echo
 }
 
-if [ -n "$1" ]; then
-    DATASET="$1"
+if [ -z "$1" ]; then
+    echo "Dataset not specified"
+    exit 381
 fi
+
+DATASET="$1"
 
 checkVarInConf RAW_DATASETS_DIR
 checkVarInConf PARSED_DATASETS_DIR
