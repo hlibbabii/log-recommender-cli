@@ -102,13 +102,9 @@ getPerformedPreps() {
     local _result_var_name="$2"
     
     local _str=""
-    for prep_type in "${PREPROCESSING_TYPES[@]}"; do
-        local _val=$(cat "$_prep_loc/preprocessing_types.json" | jq -r ".$prep_type")
-        if [ x"$_val" == x"true" ]; then
-            _str="${_str}$(printGreen 1) "
-        else
-            _str="${_str}$(printRed 0) "
-        fi
+    for prep_param in "${PREPROCESSING_PARAMS[@]}"; do
+        local _val=$(cat "$_prep_loc/preprocessing_types.json" | jq -r ".$prep_param")
+        _str="${_str}$_val "
     done
     printf -v "$_result_var_name" '%s' "$_str"
 }
@@ -130,8 +126,8 @@ displayDatasetInfoVerbose() {
     echo "Preprocessings:   (Location: $_all_preps_loc)"
     echo
     local _str="-|------------"
-    for prep_type in "${PREPROCESSING_TYPES[@]}"; do
-        _str="$_str $prep_type"
+    for prep_param in "${PREPROCESSING_PARAMS[@]}"; do
+        _str="$_str $prep_param"
     done
     _str="$_str tokens"
     _str="$_str vocabsize"
@@ -169,7 +165,7 @@ fi
 checkVarInConf RAW_DATASETS_DIR
 checkVarInConf RAW_DATASETS_METADATA_DIR
 checkVarInConf PARSED_DATASETS_DIR
-checkVarInConf PREPROCESSING_TYPES
+checkVarInConf PREPROCESSING_PARAMS
 checkVarInConf PATH_TO_PROJECT
 checkVarInConf PYTHON
 
