@@ -1,0 +1,56 @@
+function print_seqs() {
+    local _less="$1"
+    local _less_q="$2"
+    local _more_q="$3"
+
+    local _str=""
+    for (( i=0; i < _less_q; i++ )) do
+        _str="${_str}${_less}\n"
+    done
+    for (( i=0; i < _more_q; i++ )) do
+        _str="${_str}$(( _less+1 ))\n"
+    done
+    local _a=""
+    while read -r _times _what; do
+        for (( i=0; i<_times; i++ )) do
+            _a="${_a}$((_what-1))\n"
+        done
+    done <<<  $(paste <(echo -en "$_str" | shuf) <(seq $((_less_q + _more_q)) ))
+    echo -en "$_a"
+}
+
+function rename() {
+    local _what="$1"
+    local _to="$2"
+
+    mv "$_what" "$_to"
+}
+
+function rename_dry_run() {
+    local _what="$1"
+    local _to="$2"
+
+    echo "$_what --> $_to"
+}
+
+function prepare() {
+    local _dir="$1"
+    local _n_chunks="$2"
+
+    local _n_entries=$(ls ${_dir} | wc -l)
+    local _less=$(( _n_entries/_n_chunks ))
+    local _n_more=$(( _n_entries % _n_chunks ))
+    _n_less=$(( _n_chunks-_n_more ))
+    paste <(print_seqs $_less $_n_less $_n_more) <(ls)
+}
+
+DIR="."
+N_CHUNKS=1000
+
+if [[ "$1" == "-d" ]]; then
+    echo "Dry run is on!"
+    sleep 1
+    prepare "$DIR" "$N_CHUNKS" | xargs -l bash -c 'echo "$1 --> $0_$1"'
+else
+    prepare "$DIR" "$N_CHUNKS" | xargs -l bash -c 'echo "$1 --> $0_$1"; mv "$1" "$0_$1"'
+fi
