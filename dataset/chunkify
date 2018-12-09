@@ -10,13 +10,16 @@ function print_seqs() {
     for (( i=0; i < _more_q; i++ )) do
         _str="${_str}$(( _less+1 ))\n"
     done
-    local _a=""
-    while read -r _times _what; do
+
+    local _res=""
+    local _what=0
+    while read -r _times ; do
         for (( i=0; i<_times; i++ )) do
-            _a="${_a}$((_what-1))\n"
+            _res="${_res}${_what}\n"
         done
-    done <<<  $(paste <(echo -en "$_str" | shuf) <(seq $((_less_q + _more_q)) ))
-    echo -en "$_a"
+        _what=$(( _what+1 ))
+    done <  <(echo -en "$_str" | shuf)
+    echo -en "$_res"
 }
 
 function rename() {
