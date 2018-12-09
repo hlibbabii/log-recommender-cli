@@ -8,11 +8,12 @@ set -e  # Fail on first error
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 SCRIPT_NAME="$0"
 
-REAL_CURRENT_DIR=$(readlink -f "$CURRENT_DIR")
-PROJECT_ROOT="$REAL_CURRENT_DIR/.."
+PROJECT_ROOT="$CURRENT_DIR/.."
+
 source $PROJECT_ROOT/.conf
-source $PROJECT_ROOT/util.sh
-source $PROJECT_ROOT/common.sh
+source $C/log4bash.sh
+source $CURRENT_DIR/../util.sh
+source $CURRENT_DIR/../common.sh
 
 AUTOGEN_TPL="# This is automatically generated file! Do not edit!"
 #------------------------------------------------------------------------------------
@@ -102,9 +103,13 @@ getPerformedPreps() {
     local _result_var_name="$2"
     
     local _str=""
-    for prep_param in "${PREPROCESSING_PARAMS[@]}"; do
-        local _val=$(cat "$_prep_loc/preprocessing_types.json" | jq -r ".$prep_param")
-        _str="${_str}$_val "
+    for prep_type in "${PREPROCESSING_TYPES[@]}"; do
+        local _val=$(cat "$_prep_loc/preprocessing_types.json" | jq -r ".$prep_type")
+        if [ x"$_val" == x"true" ]; then
+            _str="${_str}$(printGreen 1) "
+        else
+            _str="${_str}$(printRed 0) "
+        fi
     done
     printf -v "$_result_var_name" '%s' "$_str"
 }
@@ -126,8 +131,8 @@ displayDatasetInfoVerbose() {
     echo "Preprocessings:   (Location: $_all_preps_loc)"
     echo
     local _str="-|------------"
-    for prep_param in "${PREPROCESSING_PARAMS[@]}"; do
-        _str="$_str $prep_param"
+    for prep_type in "${PREPROCESSING_TYPES[@]}"; do
+        _str="$_str $prep_type"
     done
     _str="$_str tokens"
     _str="$_str vocabsize"
@@ -165,7 +170,7 @@ fi
 checkVarInConf RAW_DATASETS_DIR
 checkVarInConf RAW_DATASETS_METADATA_DIR
 checkVarInConf PARSED_DATASETS_DIR
-checkVarInConf PREPROCESSING_PARAMS
+checkVarInConf PREPROCESSING_TYPES
 checkVarInConf PATH_TO_PROJECT
 checkVarInConf PYTHON
 
