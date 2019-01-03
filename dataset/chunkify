@@ -44,7 +44,7 @@ function prepare() {
     local _less=$(( _n_entries/_n_chunks ))
     local _n_more=$(( _n_entries % _n_chunks ))
     _n_less=$(( _n_chunks-_n_more ))
-    paste <(print_seqs $_less $_n_less $_n_more) <(ls)
+    paste <(print_seqs $_less $_n_less $_n_more) <(ls | sort -R)
 }
 
 DIR="."
