@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -e
+git clone https://github.com/SierraSoftworks/bash-cli.git
+chmod +x bash-cli/cli bash-cli/help
+ln -s "$(pwd)/log-recommender-cli/dataset" bash-cli/app/dataset
+ln -s "$(pwd)/log-recommender-cli/vocab" bash-cli/app/vocab
+
+ln -s "$(pwd)/bash-cli/cli" ~/bin/logrec 
