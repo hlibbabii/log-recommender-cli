@@ -1,5 +1,19 @@
 # log-recommender-cli
 
+Log-recommender-cli is based on [bash-cli](https://github.com/SierraSoftworks/bash-cli).
+
+## Getting started
+
+```shell
+git clone https://github.com/hlibbabii/log-recommender-cli
+chmod +x log-recommender-cli/install
+log-recommender-cli/install
+```
+Try running a sample command:
+```shell
+logrec dataset ls
+```
+
 ## Supported commands
 
 ### View datasets
