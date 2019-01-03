@@ -72,9 +72,11 @@ conda activate fastai
 
 
 PYTHON_CMD="python logrec/dataprep/to_repr.py"
-PYTHON_CMD="$PYTHON_CMD --base-from ${PARSED_DATASETS_DIR} --base-to ${PARSED_DATASETS_DIR}"
+PYTHON_CMD="$PYTHON_CMD --base-dir ${PARSED_DATASETS_DIR}"
 PYTHON_CMD="$PYTHON_CMD --preprocessing-params $pp"
-PYTHON_CMD="$PYTHON_CMD ${DATASET}/parsed ${DATASET}"
+PYTHON_CMD="$PYTHON_CMD --bpe-base-repr 101010"
+PYTHON_CMD="$PYTHON_CMD --bpe-n-merges 5000"
+PYTHON_CMD="$PYTHON_CMD ${DATASET}"
 CMD="${PYTHON_CMD} --  >${parsed_dataset}/parsed.log 2>&1"
 echo "Running the following command:"
 printGreen "${CMD}"
