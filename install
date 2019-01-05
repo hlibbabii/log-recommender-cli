@@ -1,9 +1,33 @@
 #!/usr/bin/env bash
 
-set -e
-git clone https://github.com/SierraSoftworks/bash-cli.git
-chmod +x bash-cli/cli bash-cli/help
-ln -s "$(pwd)/log-recommender-cli/dataset" bash-cli/app/dataset
-ln -s "$(pwd)/log-recommender-cli/vocab" bash-cli/app/vocab
+function check_link() {
+    local link="$1" 
+    if [ -h "$link" ]; then
+        echo "$link exists. Removing it first before recreating it"
+        rm "$link"
+    fi
+}
 
-ln -s "$(pwd)/bash-cli/cli" ~/bin/logrec 
+set -e
+
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+BASH_CLI_FOLDER_NAME='bash-cli'
+cd "$CURRENT_DIR"
+if [ -d "$BASH_CLI_FOLDER_NAME" ]; then
+    echo "$CURRENT_DIR/$BASH_CLI_FOLDER_NAME already exists. Updating it..."
+    cd "$BASH_CLI_FOLDER_NAME"
+    git pull
+    cd ..
+else 
+    git clone https://github.com/SierraSoftworks/bash-cli.git "$BASH_CLI_FOLDER_NAME" 
+fi
+chmod +x "$BASH_CLI_FOLDER_NAME/cli" "$BASH_CLI_FOLDER_NAME/help"
+
+check_link "$BASH_CLI_FOLDER_NAME/app/dataset"
+ln -s "$CURRENT_DIR/dataset" "$BASH_CLI_FOLDER_NAME/app/dataset"
+
+check_link "$BASH_CLI_FOLDER_NAME/app/vocab"
+ln -s "$CURRENT_DIR/log-recommender-cli/vocab" "$BASH_CLI_FOLDER_NAME/app/vocab"
+
+check_link ~/bin/logrec
+ln -s "$CURRENT_DIR/bash-cli/cli" ~/bin/logrec 

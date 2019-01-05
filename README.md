@@ -6,8 +6,9 @@ Log-recommender-cli is based on [bash-cli](https://github.com/SierraSoftworks/ba
 
 ```shell
 git clone https://github.com/hlibbabii/log-recommender-cli
-chmod +x log-recommender-cli/install
-log-recommender-cli/install
+cd log-recommender-cli
+chmod +x install
+./install
 ```
 Try running a sample command:
 ```shell
