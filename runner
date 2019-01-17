@@ -1,0 +1,170 @@
+#!/usr/bin/env bash
+
+#################################
+#  Format of the names of the files with params: 
+# <prioriry>.<command>.<mnemonic>.py
+# e.g. 9.lm.fw_150_300_990.py
+#
+#
+################################
+
+set -e  # Fail on first error
+
+#######  Directories
+
+ROOT_DIR="$HOME/logrec-runner"
+
+PARAM_DIR="$ROOT_DIR/param"
+LOG_DIR="$ROOT_DIR/log"
+RUNNING_JOBS_DIR="$ROOT_DIR/running_jobs"
+FAILED_TO_START_JOBS="$ROOT_DIR/failed_to_start"
+FAILED_JOBS="$ROOT_DIR/failed_jobs"
+FINISHED_JOBS="$ROOT_DIR/finished_jobs"
+
+AVAIL_GPUS_DIR="$ROOT_DIR/.free_gpus"
+
+
+if ! [ -d "$LOG_DIR" ]; then mkdir "$LOG_DIR"; fi;
+if ! [ -d "$RUNNING_JOBS_DIR" ]; then mkdir "$RUNNING_JOBS_DIR"; fi;
+if ! [ -d "$FAILED_TO_START_JOBS" ]; then mkdir "$FAILED_TO_START_JOBS"; fi;
+if ! [ -d "$FAILED_JOBS" ]; then mkdir "$FAILED_JOBS"; fi;
+if ! [ -d "$FINISHED_JOBS" ]; then mkdir "$FINISHED_JOBS"; fi;
+
+LOG_RECOMMENDER_ROOT="$HOME/log-recommender"
+
+####### File names
+
+FAILED_TO_START_REASON_FILE_NAME="REASON"
+GPU_ID_FILE_NAME="GPU_ID"
+PROC_FILE_NAME="proc"
+
+####### Job commands
+LM_COMMAND="python logrec/langmodel/lang_model.py"
+CLASSIFIER_COMMAND="python logrec/classifier/log_position_classifier.py"
+
+#######  Other commands
+GET_N_GPUS_COMMAND="python logrec/cli/get_n_gpus.py"
+
+
+#######  Setting everything up
+
+cd "$LOG_RECOMMENDER_ROOT"
+conda activate fastai
+
+OUTPUT="$($GET_N_GPUS_COMMAND)"; RES=$?
+if [ $RES -eq "0" ]; then
+	N_GPUS="$OUTPUT"
+	echo "Number of GPUS installed: $N_GPUS"
+else
+	echo "Could not get the number of gpus"
+	echo "$OUTPUT"
+	exit 1	
+fi
+
+if ! [ -d "$AVAIL_GPUS_DIR" ]; then 
+	mkdir "$AVAIL_GPUS_DIR";
+	for (( i=0; i<N_GPUS; i++ )); do
+		touch "$AVAIL_GPUS_DIR/$i"
+	done 
+fi;
+
+####### Start running the jobs
+
+set +e
+
+while ! [ -z "$(ls $PARAM_DIR)" ] || ! [ -z "$(ls $RUNNING_JOBS_DIR)" ]; do 
+	# while there are pending and running jobs
+	if ! [ -z "$(ls $PARAM_DIR)" ] && ! [ -z "$(ls $AVAIL_GPUS_DIR)" ]; then 
+		# if there are pending jobs and GPUS available
+		FREE_GPUS="$(ls $AVAIL_GPUS_DIR | wc -l)"
+		echo "Gpus available: $FREE_GPUS"
+		echo -e "List of pending jobs:\n===================="
+		ls -1 "$PARAM_DIR" | sort -nr
+		echo -e "\n====================\n"
+		JOB_FILE="$(ls -1 $PARAM_DIR | sort -nr | head -1)"
+		JOB_FILE_PATH="$PARAM_DIR/$JOB_FILE"
+		UNIQUE_ID=$(date +%y%m%d%H%M%S)
+		if [[ "$JOB_FILE" =~ ([0-9]+)\.([^\.]+)(\.(.+))?\.py ]]; then
+			PRIORITY="${BASH_REMATCH[1]}"
+			COMMAND_MNEMONIC="${BASH_REMATCH[2]}"
+			DESCRIPTION="${BASH_REMATCH[4]}"
+			JOB_ID="$UNIQUE_ID$PRIORITY.$COMMAND_MNEMONIC.$DESCRIPTION"
+		else #Invalid file name
+			echo "Invalid job param file name: $JOB_FILE"
+			JOB_ID="$UNIQUE_ID.$JOB_FILE"
+			JOB_ID_FOLDER="$FAILED_TO_START_JOBS/$JOB_ID"
+			mkdir "$JOB_ID_FOLDER"
+			echo "Moving job param file ($JOB_FILE_PATH) to $JOB_ID_FOLDER"
+			mv "$JOB_FILE_PATH" "$JOB_ID_FOLDER"
+			echo "Invalid job param file name" > "$JOB_ID_FOLDER/$FAILED_TO_START_REASON_FILE_NAME"
+			continue
+		fi
+		if [ "$COMMAND_MNEMONIC" == "lm" ]; then
+			COMMAND="$LM_COMMAND"
+		elif [ "$COMMAND_MNEMONIC" == "cl" ]; then
+			COMMAND="$CLASSIFIER_COMMAND"
+		else
+			echo "Invalid command mnemonic: $COMMAND_MNEMONIC"
+			JOB_ID_FOLDER="$FAILED_TO_START_JOBS/$JOB_ID"
+			mkdir "$JOB_ID_FOLDER"
+			echo "Moving job param file ($JOB_FILE_PATH) to $JOB_ID_FOLDER"
+			mv "$JOB_FILE_PATH" "$JOB_ID_FOLDER"
+			echo "Invalid command mnemonic" > "$JOB_ID_FOLDER/$FAILED_TO_START_REASON_FILE_NAME"
+			continue
+		fi
+
+		JOB_ID_FOLDER="$RUNNING_JOBS_DIR/$JOB_ID"
+		mkdir "$JOB_ID_FOLDER"
+		mv "$JOB_FILE_PATH" "$JOB_ID_FOLDER"
+		NEW_JOB_FILE_PATH="$JOB_ID_FOLDER/$JOB_FILE"
+
+		TARGET_GPU="$(ls -1 $AVAIL_GPUS_DIR | sort | head -1)"
+		rm "$AVAIL_GPUS_DIR/$TARGET_GPU"
+		echo "$TARGET_GPU" > "$JOB_ID_FOLDER/$GPU_ID_FILE_NAME"
+
+		CMD="$HOME/a.sh"
+		CMD="$COMMAND --params-path $NEW_JOB_FILE_PATH --device $TARGET_GPU > $LOG_DIR/$JOB_ID.log 2>&1 &"
+		"$CMD"
+		PROC=$!
+		echo -e "\t\t\t\t  Submitting job $JOB_FILE... on GPU $TARGET_GPU"
+		echo -e "\t\t\t\t  (JOB_ID: $JOB_ID)"
+		echo -e "\t\t\t\t  (COMMAND: $CMD)"
+		echo -e "\t\t\t\t  (PID: $PROC)"
+		echo "$PROC" > "$JOB_ID_FOLDER/$PROC_FILE_NAME"
+		WAIT_BEFORE_NEXT_CHECK=""
+	fi
+
+	if ! [ -z "$(ls $RUNNING_JOBS_DIR)" ]; then
+		for jobdir in $RUNNING_JOBS_DIR/*; do 
+			procfile="$jobdir/$PROC_FILE_NAME"
+			PID=$(cat $procfile)
+			GREP_OUTPUT=$(ps | awk '{print $1}' | grep "$PID")
+			if [ -z "$GREP_OUTPUT" ]; then 
+				echo -e "\nNo PID $PID in ps output. Getting its exit status"
+				wait $PID
+				EXIT_STATUS=$?
+				JOB_NAME=$(basename $jobdir)
+				echo "Job $JOB_NAME (PID $PID) exited with status $EXIT_STATUS"
+				FREED_GPU_ID=$(cat "$jobdir/$GPU_ID_FILE_NAME")
+				echo "GPU $FREED_GPU_ID is free now."
+				touch "$AVAIL_GPUS_DIR/$FREED_GPU_ID"
+				if [ $EXIT_STATUS -eq "0" ]; then
+					mv $jobdir $FINISHED_JOBS
+				else
+					mv $jobdir $FAILED_JOBS
+				fi
+				WAIT_BEFORE_NEXT_CHECK=""
+			fi
+		done
+	fi
+	if [ -z "$WAIT_BEFORE_NEXT_CHECK" ]; then
+		# Next time wait 10 seconds
+		WAIT_BEFORE_NEXT_CHECK="1"
+	else
+		sleep 10
+		printf "."
+	fi
+done
+
+echo -e "\nNo running or penfing jobs left. Script finished successfully."
+exit 0
