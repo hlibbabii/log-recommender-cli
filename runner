@@ -43,7 +43,7 @@ LM_COMMAND="python logrec/langmodel/lang_model.py"
 CLASSIFIER_COMMAND="python logrec/classifier/log_position_classifier.py"
 
 #######  Other commands
-GET_N_GPUS_COMMAND="python logrec/cli/get_n_gpus.py"
+GET_N_GPUS_COMMAND="python logrec/scripts/get_n_gpus.py"
 
 
 #######  Setting everything up
