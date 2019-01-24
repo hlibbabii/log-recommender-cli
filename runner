@@ -32,6 +32,21 @@ if ! [ -d "$FINISHED_JOBS" ]; then mkdir "$FINISHED_JOBS"; fi;
 
 LOG_RECOMMENDER_ROOT="$HOME/log-recommender"
 
+CL_DEFAULT_CONFIG_PATH="$ROOT_DIR/default_params/defaults/cl_default_config.py"
+if ! [ -f "$CL_DEFAULT_CONFIG_PATH" ]; then
+	echo "No default config found: $CL_DEFAULT_CONFIG_PATH"
+	exit 44
+fi
+LM_DEFAULT_CONFIG_PATH="$ROOT_DIR/default_params/defaults/ml_default_config.py"
+if ! [ -f "$ML_DEFAULT_CONFIG_PATH" ]; then
+	echo "No default config found: $ML_DEFAULT_CONFIG_PATH"
+	exit 44
+fi
+EMPTY_CHANGED_PARAMS_PATH="$ROOT_DIR/default_params/empty.py"
+if ! [ -f "$EMPTY_CHANGED_PARAMS_PATH" ]; then
+	touch "$EMPTY_CHANGED_PARAMS_PATH"
+fi
+
 ####### File names
 
 FAILED_TO_START_REASON_FILE_NAME="REASON"
@@ -99,10 +114,17 @@ while ! [ -z "$(ls $PARAM_DIR)" ] || ! [ -z "$(ls $RUNNING_JOBS_DIR)" ]; do
 			echo "Invalid job param file name" > "$JOB_ID_FOLDER/$FAILED_TO_START_REASON_FILE_NAME"
 			continue
 		fi
+		PARAMS_PATH=""
 		if [ "$COMMAND_MNEMONIC" == "lm" ]; then
 			COMMAND="$LM_COMMAND"
+		elif [[ "$COMMAND_MNEMONIC" == "lmp" ]]; then
+			COMMAND="$LM_COMMAND"
+			PARAMS_PATH="$LM_DEFAULT_CONFIG_PATH"
 		elif [ "$COMMAND_MNEMONIC" == "cl" ]; then
 			COMMAND="$CLASSIFIER_COMMAND"
+		elif [ "$COMMAND_MNEMONIC" == "clp" ]; then
+			COMMAND="$CLASSIFIER_COMMAND"
+			PARAMS_PATH="$CL_DEFAULT_CONFIG_PATH"
 		else
 			echo "Invalid command mnemonic: $COMMAND_MNEMONIC"
 			JOB_ID_FOLDER="$FAILED_TO_START_JOBS/$JOB_ID"
@@ -123,7 +145,13 @@ while ! [ -z "$(ls $PARAM_DIR)" ] || ! [ -z "$(ls $RUNNING_JOBS_DIR)" ]; do
 		echo "$TARGET_GPU" > "$JOB_ID_FOLDER/$GPU_ID_FILE_NAME"
 
 		CMD="$HOME/a.sh"
-		CMD="$COMMAND --params-path $NEW_JOB_FILE_PATH --device $TARGET_GPU > $LOG_DIR/$JOB_ID.log 2>&1 &"
+		if [ -z "$PARAMS_PATH" ]; then
+			PARAMS_PATH="$NEW_JOB_FILE_PATH"
+			CHANGED_PARAMS_PATH="$EMPTY_CHANGED_PARAMS_PATH"
+		else
+			CHANGED_PARAMS_PATH="$NEW_JOB_FILE_PATH"			
+		fi
+		CMD="$COMMAND --params-path $PARAMS_PATH --changed-params-path $CHANGED_PARAMS_PATH --device $TARGET_GPU > $LOG_DIR/$JOB_ID.log 2>&1 &"
 		"$CMD"
 		PROC=$!
 		echo -e "\t\t\t\t  Submitting job $JOB_FILE... on GPU $TARGET_GPU"
