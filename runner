@@ -32,12 +32,12 @@ if ! [ -d "$FINISHED_JOBS" ]; then mkdir "$FINISHED_JOBS"; fi;
 
 LOG_RECOMMENDER_ROOT="$HOME/log-recommender"
 
-CL_DEFAULT_CONFIG_PATH="$ROOT_DIR/default_params/defaults/cl_default_config.py"
+CL_DEFAULT_CONFIG_PATH="$ROOT_DIR/default_configs/cl_default_config.py"
 if ! [ -f "$CL_DEFAULT_CONFIG_PATH" ]; then
 	echo "No default config found: $CL_DEFAULT_CONFIG_PATH"
 	exit 44
 fi
-LM_DEFAULT_CONFIG_PATH="$ROOT_DIR/default_params/defaults/ml_default_config.py"
+LM_DEFAULT_CONFIG_PATH="$ROOT_DIR/ddefault_configs/ml_default_config.py"
 if ! [ -f "$ML_DEFAULT_CONFIG_PATH" ]; then
 	echo "No default config found: $ML_DEFAULT_CONFIG_PATH"
 	exit 44
