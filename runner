@@ -54,22 +54,28 @@ GPU_ID_FILE_NAME="GPU_ID"
 PROC_FILE_NAME="proc"
 
 ####### Job commands
-LM_COMMAND="python logrec/langmodel/lang_model.py"
-CLASSIFIER_COMMAND="python logrec/classifier/log_position_classifier.py"
+LM_COMMAND="python -u logrec/langmodel/lang_model.py"
+CLASSIFIER_COMMAND="python -u logrec/classifier/log_position_classifier.py"
 
 #######  Other commands
 GET_N_GPUS_COMMAND="python logrec/scripts/get_n_gpus.py"
 
-
 #######  Setting everything up
 
 cd "$LOG_RECOMMENDER_ROOT"
-conda activate fastai
+
+echo "Working directory is $(pwd)"
+echo "Shell is $($SHELL --version)"
+echo "Python is $(which python)"
+
 
 OUTPUT="$($GET_N_GPUS_COMMAND)"; RES=$?
 if [ $RES -eq "0" ]; then
 	N_GPUS="$OUTPUT"
 	echo "Number of GPUS installed: $N_GPUS"
+	if [ $N_GPUS -eq "-1" ]; then
+		exit 87
+	fi;
 else
 	echo "Could not get the number of gpus"
 	echo "$OUTPUT"
@@ -144,19 +150,16 @@ while ! [ -z "$(ls $PARAM_DIR)" ] || ! [ -z "$(ls $RUNNING_JOBS_DIR)" ]; do
 		rm "$AVAIL_GPUS_DIR/$TARGET_GPU"
 		echo "$TARGET_GPU" > "$JOB_ID_FOLDER/$GPU_ID_FILE_NAME"
 
-		CMD="$HOME/a.sh"
 		if [ -z "$PARAMS_PATH" ]; then
 			PARAMS_PATH="$NEW_JOB_FILE_PATH"
 			CHANGED_PARAMS_PATH="$EMPTY_CHANGED_PARAMS_PATH"
 		else
 			CHANGED_PARAMS_PATH="$NEW_JOB_FILE_PATH"			
 		fi
-		CMD="$COMMAND --params-path $PARAMS_PATH --changed-params-path $CHANGED_PARAMS_PATH --device $TARGET_GPU > $LOG_DIR/$JOB_ID.log 2>&1 &"
-		"$CMD"
+		$COMMAND --params-path $PARAMS_PATH --changed-params-path $CHANGED_PARAMS_PATH --device $TARGET_GPU > $LOG_DIR/$JOB_ID.log 2>&1 &
 		PROC=$!
 		echo -e "\t\t\t\t  Submitting job $JOB_FILE... on GPU $TARGET_GPU"
 		echo -e "\t\t\t\t  (JOB_ID: $JOB_ID)"
-		echo -e "\t\t\t\t  (COMMAND: $CMD)"
 		echo -e "\t\t\t\t  (PID: $PROC)"
 		echo "$PROC" > "$JOB_ID_FOLDER/$PROC_FILE_NAME"
 		WAIT_BEFORE_NEXT_CHECK=""
