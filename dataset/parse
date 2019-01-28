@@ -52,8 +52,8 @@ if [[ ! -d "${parsed_dataset_dir}/metadata" ]]; then
 fi
 
 double_quote='"'
-PYTHON_CMD="python logrec/dataprep/parse_projects.py --base-from ${RAW_DATASETS_DIR} --base-to ${PARSED_DATASETS_DIR} ${DATASET} ${DATASET}/parsed"
-CMD="${PYTHON_CMD} --  >${parsed_dataset}/parsed.log 2>&1"
+PYTHON_CMD="python logrec/dataprep/parse_projects.py ${DATASET}"
+CMD="${PYTHON_CMD} --  >${parsed_dataset_dir}/parsed.log 2>&1"
 echo "Running the following command:"
 printGreen "${CMD}"
 ${CMD}
