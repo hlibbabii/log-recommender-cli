@@ -46,7 +46,7 @@ getTokensNumberInRepr() {
     local _n_tokens="UNK"
     if [[ ! -f "$_n_tokens_file" ]]; then
         if [[ "$_long_option" == "-ll" ]]; then
-            $CURRENT_DIR/wc $_dataset_name $_repr_name
+            $PROJECT_ROOT/dataset/wc $_dataset_name $_repr_name
             _n_tokens=$(tail -n 1 $_n_tokens_file)
         fi
     else
