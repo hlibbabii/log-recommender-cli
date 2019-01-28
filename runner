@@ -20,6 +20,7 @@ RUNNING_JOBS_DIR="$ROOT_DIR/running_jobs"
 FAILED_TO_START_JOBS="$ROOT_DIR/failed_to_start"
 FAILED_JOBS="$ROOT_DIR/failed_jobs"
 FINISHED_JOBS="$ROOT_DIR/finished_jobs"
+DEFAULT_CONFIGS="$ROOT_DIR/default_configs"
 
 AVAIL_GPUS_DIR="$ROOT_DIR/.free_gpus"
 
@@ -29,20 +30,22 @@ if ! [ -d "$RUNNING_JOBS_DIR" ]; then mkdir "$RUNNING_JOBS_DIR"; fi;
 if ! [ -d "$FAILED_TO_START_JOBS" ]; then mkdir "$FAILED_TO_START_JOBS"; fi;
 if ! [ -d "$FAILED_JOBS" ]; then mkdir "$FAILED_JOBS"; fi;
 if ! [ -d "$FINISHED_JOBS" ]; then mkdir "$FINISHED_JOBS"; fi;
+if ! [ -d "$DEFAULT_CONFIGS" ]; then mkdir "$DEFAULT_CONFIGS"; fi;
 
 LOG_RECOMMENDER_ROOT="$HOME/log-recommender"
 
-CL_DEFAULT_CONFIG_PATH="$ROOT_DIR/default_configs/cl_default_config.py"
+
+CL_DEFAULT_CONFIG_PATH="$DEFAULT_CONFIGS/cl_default_config.py"
 if ! [ -f "$CL_DEFAULT_CONFIG_PATH" ]; then
 	echo "No default config found: $CL_DEFAULT_CONFIG_PATH"
 	exit 44
 fi
-LM_DEFAULT_CONFIG_PATH="$ROOT_DIR/ddefault_configs/ml_default_config.py"
-if ! [ -f "$ML_DEFAULT_CONFIG_PATH" ]; then
-	echo "No default config found: $ML_DEFAULT_CONFIG_PATH"
+LM_DEFAULT_CONFIG_PATH="$DEFAULT_CONFIGS/lm_default_config.py"
+if ! [ -f "$LM_DEFAULT_CONFIG_PATH" ]; then
+	echo "No default config found: $LM_DEFAULT_CONFIG_PATH"
 	exit 44
 fi
-EMPTY_CHANGED_PARAMS_PATH="$ROOT_DIR/default_params/empty.py"
+EMPTY_CHANGED_PARAMS_PATH="$DEFAULT_CONFIGS/empty.py"
 if ! [ -f "$EMPTY_CHANGED_PARAMS_PATH" ]; then
 	touch "$EMPTY_CHANGED_PARAMS_PATH"
 fi
@@ -55,7 +58,7 @@ PROC_FILE_NAME="proc"
 
 ####### Job commands
 LM_COMMAND="python -u logrec/langmodel/lang_model.py"
-CLASSIFIER_COMMAND="python -u logrec/classifier/log_position_classifier.py"
+CLASSIFIER_COMMAND="python -u logrec/classifier/classifier.py"
 
 #######  Other commands
 GET_N_GPUS_COMMAND="python logrec/scripts/get_n_gpus.py"
