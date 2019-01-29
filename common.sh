@@ -11,6 +11,7 @@ REAL_CURRENT_DIR=$(readlink -f "$CURRENT_DIR")
 PROJECT_ROOT="$REAL_CURRENT_DIR"
 
 source $PROJECT_ROOT/.conf
+echo "Loading $PROJECT_ROOT/log4bash.sh if not loaded"
 [ -z LOG4BASH_INITIALIZED ] && source $PROJECT_ROOT/log4bash.sh
 source $PROJECT_ROOT/util.sh
 

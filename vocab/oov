@@ -25,14 +25,18 @@ getReducedVocabSize() {
 
     local _parsed_dataset_dir="$PARSED_DATASETS_DIR/$_dataset_name"
     local _vocab_file="$_parsed_dataset_dir/metadata/$_repr_name/vocab"
-
+    if ! [ -f "$_vocab_file" ]; then
+        printf -v "$_result_var_name1" '%s' "UNK"
+        printf -v "$_result_var_name2" '%s' "UNK"
+        return 1
+    fi;
     _vocab_size=$(wc -l $_vocab_file | awk -e '{print $1}')
     _reduced_vocabsize=$_vocab_size
     _n_tokens=$(cat $_vocab_file |awk -e '{sum += $2} END {print sum}')
     _reduced_n_tokens=0
     for (( i = 1; i < $_min_quantity; i++ )) 
     do 
-        local _vocab_reduced=$(grep " $i\$" $_vocab_file | wc -l)
+        local _vocab_reduced=$(grep -P "\t$i\$" $_vocab_file | wc -l)
         _reduced_vocabsize=$((_reduced_vocabsize-_vocab_reduced))
         _reduced_n_tokens=$((_reduced_n_tokens+i*_vocab_reduced))
     done
@@ -55,14 +59,15 @@ displayOov() {
     displayGeneralDatasetInfoVerbose $_dataset
 
     local _all_preps_loc="$PARSED_DATASETS_DIR/$_dataset/repr"
+    local _all_metadata_loc="$PARSED_DATASETS_DIR/$_dataset/metadata"
     echo "Preprocessings:   (Location: $_all_preps_loc)"
     echo
     local _str="-|------------"
     _str="$_str vocabsize"
     _str="$_str n_tokens"
-    _str="$_str >=2 >=2 >=3 >=3 >=4 >=4 >=5 >=5"
+    _str="$_str >=2 >=2 >=3 >=3 >=4 >=4 >=5 >=5 >=100 >=100"
     _str="$_str \n"
-    for _prep_loc in $_all_preps_loc/*; do
+    for _metadata_loc in $_all_metadata_loc/*; do
         local _prep_name="$(basename $_prep_loc)"
         if [ "$_prep_name" == "*" ]; then
             continue
@@ -89,6 +94,9 @@ displayOov() {
 
         _str="$_str $_reduced_vocabsize $_reduced_n_tokens\n"
         
+        getReducedVocabSize $_dataset $_prep_name result1 result2 100; _reduced_vocabsize="${result1}"; _reduced_n_tokens="${result2}"
+
+        _str="$_str $_reduced_vocabsize $_reduced_n_tokens\n"
     done
     echo -e $_str | column -t
     echo

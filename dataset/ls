@@ -12,6 +12,7 @@ REAL_CURRENT_DIR=$(readlink -f "$CURRENT_DIR")
 PROJECT_ROOT="$REAL_CURRENT_DIR/.."
 source $PROJECT_ROOT/.conf
 source $PROJECT_ROOT/util.sh
+source $PROJECT_ROOT/log4bash.sh
 source $PROJECT_ROOT/common.sh
 
 AUTOGEN_TPL="# This is automatically generated file! Do not edit!"
@@ -98,14 +99,11 @@ displayDatasetInfo() {
 }
 
 getPerformedPreps() {
-    local _prep_loc="$1"
+    local _prep_name="$1"
     local _result_var_name="$2"
     
-    local _str=""
-    for prep_param in "${PREPROCESSING_PARAMS[@]}"; do
-        local _val=$(cat "$_prep_loc/preprocessing_types.json" | jq -r ".$prep_param")
-        _str="${_str}$_val "
-    done
+    local _str="$(echo $_prep_name | sed 's/\B/ /g')"
+
     printf -v "$_result_var_name" '%s' "$_str"
 }
 
@@ -122,7 +120,7 @@ displayDatasetInfoVerbose() {
 
     displayGeneralDatasetInfoVerbose $_dataset
     
-    local _all_preps_loc="$PARSED_DATASETS_DIR/$_dataset/repr"
+    local _all_preps_loc="$PARSED_DATASETS_DIR/$_dataset/metadata"
     echo "Preprocessings:   (Location: $_all_preps_loc)"
     echo
     local _str="-|------------"
@@ -138,7 +136,7 @@ displayDatasetInfoVerbose() {
             continue
         fi
         
-        getPerformedPreps        $_prep_loc               result                ; _performed_preps="${result}"
+        getPerformedPreps        $_prep_name               result                ; _performed_preps="${result}"
         getTokensNumberInRepr    $_dataset $_prep_name    result   $_long_option; _n_tokens="${result}"
         getVocabSize             $_dataset $_prep_name    result   $_long_option; _vocabsize="${result}"
  

@@ -8,6 +8,7 @@
 set -e  # Fail on first error
 
 # Useful global variables that users may wish to reference
+
 LOG4BASH_INITIALIZED=TRUE
 
 SCRIPT_ARGS="$@"
@@ -141,3 +142,4 @@ log_campfire() {
 # End Logging Section
 #--------------------------------------------------------------------------------------------------
 
+log_debug "log4bash loaded"
