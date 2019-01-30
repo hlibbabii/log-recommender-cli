@@ -1,0 +1,36 @@
+REPR=$1
+
+if ! [[ $REPR =~ [0-9]{5} ]]; then
+	echo "BAD repr: $REPR"	
+	exit 1
+fi
+
+LOG_FILE="$HOME/repr_runner/$REPR.log"
+
+cd $HOME/log-recommender
+
+echo "Running to_repr $REPR"
+python logrec/dataprep/to_repr.py en_100_percent $REPR > $LOG_FILE 2&>1
+
+echo "Running vocabsize $REPR"
+pyhon logrec/dataprep/vocabsize.py en_100_percent $REPR > $LOG_FILE 2&>1 & 
+PID=$!
+echo "PID of vocabsize $REPR is $PID
+sleep 1800
+kill $PID
+pyhon logrec/dataprep/vocabsize.py en_100_percent $REPR > $LOG_FILE 2&>1
+
+
+echo "Running wc $REPR"
+../logrec-cli/dataset/wc en_100_percent $REPR  > $LOG_FILE 2&>1
+
+if [ -z "$REPR" ]; then
+	echo "Repr cannot be empty: $REPR"
+	exit 2
+fi
+
+REPR_DIR="$HOME/log-recommender/nn-data/new_framework/en_100_percent/repr/$REPR"
+
+echo "Removing repr dir $REPR_DIR"
+rm -r "$REPR_DIR"
+
