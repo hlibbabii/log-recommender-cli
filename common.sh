@@ -11,6 +11,7 @@ REAL_CURRENT_DIR=$(readlink -f "$CURRENT_DIR")
 PROJECT_ROOT="$REAL_CURRENT_DIR"
 
 source $PROJECT_ROOT/.conf
+echo "Loading $PROJECT_ROOT/log4bash.sh if not loaded"
 [ -z LOG4BASH_INITIALIZED ] && source $PROJECT_ROOT/log4bash.sh
 source $PROJECT_ROOT/util.sh
 
@@ -46,7 +47,7 @@ getTokensNumberInRepr() {
     local _n_tokens="UNK"
     if [[ ! -f "$_n_tokens_file" ]]; then
         if [[ "$_long_option" == "-ll" ]]; then
-            $CURRENT_DIR/wc $_dataset_name $_repr_name
+            $PROJECT_ROOT/dataset/wc $_dataset_name $_repr_name
             _n_tokens=$(tail -n 1 $_n_tokens_file)
         fi
     else
