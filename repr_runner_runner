@@ -1,0 +1,8 @@
+reprs=( '' )
+
+LOG_FILE="$HOME/repr_runner.log"
+
+for repr in "${reprs[@]}"; do
+	$HOME/logrec-cli/repr_runner "$repr" >$LOG_FILE 2&>1 &
+	sleep 400
+done
