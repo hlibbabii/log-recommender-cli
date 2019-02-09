@@ -68,7 +68,8 @@ displayOov() {
     _str="$_str >=2 >=2 >=3 >=3 >=4 >=4 >=5 >=5 >=100 >=100"
     _str="$_str \n"
     for _metadata_loc in $_all_metadata_loc/*; do
-        local _prep_name="$(basename $_prep_loc)"
+        local _prep_name="$(basename $_metadata_loc)"
+        log_debug "Processing $_prep_name"
         if [ "$_prep_name" == "*" ]; then
             continue
         fi
@@ -92,7 +93,7 @@ displayOov() {
 
         getReducedVocabSize $_dataset $_prep_name result1 result2 5; _reduced_vocabsize="${result1}"; _reduced_n_tokens="${result2}"
 
-        _str="$_str $_reduced_vocabsize $_reduced_n_tokens\n"
+        _str="$_str $_reduced_vocabsize $_reduced_n_tokens"
         
         getReducedVocabSize $_dataset $_prep_name result1 result2 100; _reduced_vocabsize="${result1}"; _reduced_n_tokens="${result2}"
 
