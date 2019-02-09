@@ -1,0 +1,38 @@
+set -eu
+
+PATH_TO_DATASET="$1"
+
+TRAIN_PERCENT=$2
+TEST_PERCENT=$3
+VALID_PERCENT=4
+
+N_PROJECTS=$(ls "$PATH_TO_DATASET" | wc -l)
+
+N_TEST_SET=$((N_PROJECTS * 100 / TEST_PERCENT))
+N_VALID_SET=$((N_PROJECTS * 100 / VALID_PERCENT))
+N_TRAIN_SET=$((N_PROJECTS-N_TEST_SET-N_VALID_SET))
+
+SUM=$((N_TRAIN_SET + N_TEST_SET + N_VALID_SET))
+if ! [[ $SUM -eq $N_PROJECTS ]]; then
+    echo "$SUM doesnt equal to  the number of projects ($N_PROJECTS)"
+fi
+
+TRAIN_PROJECTS_LIST_FILE="$PATH_TO_DATASET/../train_projects.txt"
+TEST_PROJECTS_LIST_FILE="$PATH_TO_DATASET/../test_projects.txt"
+VALID_PROJECTS_LIST_FILE="$PATH_TO_DATASET/../valid_projects.txt"
+
+ls "$PATH_TO_DATASET" | sort -R > split_projects.tmp
+
+cat split_projects.tmp | head -n $N_TRAIN_SET > $TRAIN_PROJECTS_LIST_FILE
+cat split_projects.tmp | head -n $N_TRAIN_SET + $N_TEST_SET | tail -n $N_TEST_SET  > $TEST_PROJECTS_LIST_FILE
+cat split_projects.tmp | tail -n $N_VALID_SET  > $VALID_PROJECTS_LIST_FILE
+
+rm split_projects.tmp
+
+mkdir "$PATH_TO_DATASET/train"
+mkdir "$PATH_TO_DATASET/test"
+mkdir "$PATH_TO_DATASET/valid"
+
+cat $TRAIN_PROJECTS_LIST_FILE | xargs -I{} mv "$PATH_TO_DATASET/{}" "$PATH_TO_DATASET/train"
+cat $TEST_PROJECTS_LIST_FILE | xargs -I{} mv "$PATH_TO_DATASET/{}" "$PATH_TO_DATASET/test"
+cat $VALID_PROJECTS_LIST_FILE | xargs -I{} mv "$PATH_TO_DATASET/{}" "$PATH_TO_DATASET/valid"
