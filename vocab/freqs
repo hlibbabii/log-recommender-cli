@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+#------------------------------------------------------------------------------------
+set -e  # Fail on first error
+
+# Some useful global variables and constants
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+SCRIPT_NAME="$0"
+
+REAL_CURRENT_DIR=$(readlink -f "$CURRENT_DIR")
+PROJECT_ROOT="$REAL_CURRENT_DIR/.."
+source $PROJECT_ROOT/.conf
+#-----------------------------------------------------------------------------------
+
+_dataset_name="$1"
+_repr_name="$2"
+
+_parsed_dataset_dir="$PARSED_DATASETS_DIR/$_dataset_name"
+_vocab_file="$_parsed_dataset_dir/metadata/$_repr_name/vocab"
+_vocabfreqs_file="$_parsed_dataset_dir/metadata/$_repr_name/vocabfreqs"
+if ! [ -f "$_vocab_file" ]; then
+    echo "Vocab file does not exist: $_vocab_file"
+    exit 1
+fi;
+
+if [ -f "$_vocabfreqs_file" ]; then
+    echo "Vocab freqs file already exists: $_vocabfreqs_file"
+    exit 0
+fi;
+
+_reduced_n_tokens=0
+_freq='-1'
+_count=1
+cat "$_vocab_file" | awk '{print $NF}' | ( while IFS='' read -r _occ || [ -n "$_occ" ]; do
+    if ! [ "$_freq" -eq "$_occ" ]; then
+        if ! [ "$_freq" -eq "-1" ]; then
+            echo -e "$_freq\t$_count" >> "$_vocabfreqs_file"
+        fi;
+        _freq="$_occ"
+        _count=1
+    else
+        _count=$((_count+1))
+    fi
+done
+if [[ -n "$_freq" ]]; then
+    echo -e "$_freq\t$_count" >> "$_vocabfreqs_file"
+fi;)

@@ -1,3 +1,17 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #!/usr/bin/env bash
 
 #------------------------------------------------------------------------------------
@@ -38,7 +52,6 @@ getReducedVocabSize() {
     _n_tokens=$(cat $_vocab_file |awk -e '{sum += $2} END {print sum}')
 
     line=""
-    _min_quantity=$((_min_quantity-1))
     while [ -z "$line" ] && [ "$_min_quantity" -gt 0 ]; do
         line=$(grep -P "^$_min_quantity\t.*\t.*\$" "$_vocabfreqs_cumul_file" || true)
         if [ -z "$line" ]; then
@@ -49,22 +62,22 @@ getReducedVocabSize() {
         fi
     done
     if [ "$_min_quantity" -eq 0 ]; then
-        _reduced_vocabsize=$_vocab_size
+        _reduced_vocabsize=$vocab_size
         _reduced_n_tokens=0
     else
-        _vocab_reduced=$(echo "$line" | awk '{print $2}')
+        _vocab_reduced=$(echo "$line" | cut -f2)
         _reduced_vocabsize=$((_vocab_size-_vocab_reduced))
-        _reduced_n_tokens=$(echo "$line" | awk '{print $3}')
+        _reduced_n_tokens=$(echo "$line" | cut -f3)
     fi
 
     local _percent=$(echo "$_reduced_n_tokens / $_n_tokens * 100" | bc -l)
 
     printf -v "$_result_var_name1" '%s' "$_reduced_vocabsize"
     printf -v "$_result_var_name2" '%s' "$_reduced_n_tokens"
-    printf -v "$_result_var_name3" '%.3f' "$_percent"
+    printf -v "$_result_var_name3" '%.3f%%' "$_percent"
 }
 
-DEL=","
+DEL="\t"
 
 displayOov() {
     local _dataset="$1"
@@ -86,11 +99,11 @@ displayOov() {
     for prep_param in ${PREPROCESSING_PARAMS[@]}; do
         _str="$_str$DEL$prep_param"
     done
-    _str="$_str${DEL}vocabsize${DEL}n_tokens"
+    _str="$_str$DELvocabsize$DELn_tokens"
     for freq in ${MIN_FREQ_OPTIONS[@]}; do
        _str="$_str$DEL>=$freq(vocab)$DEL>=$freq(-n_tokens)$DEL>=$freq(-n_tokens%)"
     done
-    _str="$_str\n"
+    _str="$_str$DEL\n"
 
     for _metadata_loc in $_all_metadata_loc/*; do
         local _prep_name="$(basename $_metadata_loc)"
@@ -101,7 +114,7 @@ displayOov() {
             continue
         fi
 
-        _str="$_str$_prep_name"
+        _str="$_str$DEL$_prep_name"
 
         counter=0
 	while IFS='' read -r param_val; do
@@ -114,20 +127,17 @@ displayOov() {
         $PROJECT_ROOT/vocab/freqs_cumul "$_dataset" "$_prep_name"        
 
         last_line="$(tail -1 $_vocabfreqs_cumul_file)"
-        _vocabsize="$(echo $last_line | awk '{print $2}')"
-        _n_tokens="$(echo $last_line | awk '{print $3}')"
-        echo "Vocab: $_vocabsize"
-        echo "N tokens: $_n_tokens"
+        _vocabsize="$(echo $last_line | cut -f2)"
+        _n_tokens="$(echo $last_line | cut -f3)"
 
         _str="$_str$DEL$_vocabsize$DEL$_n_tokens"
 
         for freq in ${MIN_FREQ_OPTIONS[@]}; do
             getReducedVocabSize $_dataset $_prep_name result1 result2 result3 "$freq"; 
-            _reduced_vocabsize="${result1}"; _reduced_n_tokens="${result2}"; _reduced_n_tokens_percent="${result3}"
+            _reduced_vocabsize="${result1}"; _reduced_n_tokens="${result2}"; _reduced_n_tokens="${result3}"
 
-            _str="$_str$DEL$_reduced_vocabsize$DEL$_reduced_n_tokens$DEL$_reduced_n_tokens_percent"
+            _str="$_str$DEL$_reduced_vocabsize$DEL$_reduced_n_tokens$DEL$_reduced_n_tokens_percent\n"
         done
-        _str="$_str\n"
     done
     echo -e $_str | column -t
     echo

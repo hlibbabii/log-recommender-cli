@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+#------------------------------------------------------------------------------------
+set -e  # Fail on first error
+
+# Some useful global variables and constants
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+SCRIPT_NAME="$0"
+
+REAL_CURRENT_DIR=$(readlink -f "$CURRENT_DIR")
+PROJECT_ROOT="$REAL_CURRENT_DIR/.."
+source $PROJECT_ROOT/.conf
+#-----------------------------------------------------------------------------------
+
+_dataset_name="$1"
+_repr_name="$2"
+
+_parsed_dataset_dir="$PARSED_DATASETS_DIR/$_dataset_name"
+_vocabfreqs_file="$_parsed_dataset_dir/metadata/$_repr_name/vocabfreqs"
+_vocabfreqs_cumul_file="$_parsed_dataset_dir/metadata/$_repr_name/vocabfreqs_cumul"
+if ! [ -f "$_vocabfreqs_file" ]; then
+    echo "Vocab freqs file does not exist: $_vocabfreqs_file"
+    exit 1
+fi;
+
+if [ -f "$_vocabfreqs_cumul_file" ]; then
+    echo "Vocab freqs cumul file already exists: $_vocabfreqs_cumul_file"
+    exit 0
+fi;
+
+vocab=0
+tokens=0
+cat "$_vocabfreqs_file" | sort -n -k 1 | while IFS='' read -r line; do
+    freq=$(echo "$line" | cut -f1)
+    occurs=$(echo "$line" | cut -f2)
+    vocab=$((vocab+occurs))
+    tokens=$((tokens+occurs*freq))
+    echo -e "$freq\t$vocab\t$tokens" >> "$_vocabfreqs_cumul_file"
+done

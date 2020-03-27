@@ -1,0 +1,14 @@
+set -eu 
+
+N="$1"
+
+REPR_CONFIGS_FILE="$HOME/repr_configs/$N"
+
+LOG_FILE="$HOME/repr_runner.log.${N}"
+
+echo "" >$LOG_FILE
+
+cat "$REPR_CONFIGS_FILE" | while IFS='' read -r repr; do
+	echo "Processing $repr"
+	$HOME/logrec-cli/repr_runner "$repr" >>$LOG_FILE 2>&1
+done

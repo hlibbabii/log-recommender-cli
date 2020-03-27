@@ -1,36 +1,40 @@
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+source $CURRENT_DIR/log4bash.sh
+source $CURRENT_DIR/.conf
+
 REPR=$1
 
+log_info "Processing $REPR"
+
 if ! [[ $REPR =~ [0-9]{5} ]]; then
-	echo "BAD repr: $REPR"	
+	log_error "BAD repr: $REPR"	
 	exit 1
 fi
 
 LOG_FILE="$HOME/repr_runner/$REPR.log"
+DEFAULT_DATASET="nodup_en_only"
 
-cd $HOME/log-recommender
+cd $PATH_TO_PROJECT
 
-echo "Running to_repr $REPR"
-python logrec/dataprep/to_repr.py en_100_percent $REPR > $LOG_FILE 2&>1
+log_info "Running to_repr $REPR"
+python logrec/dataprep/to_repr.py $DEFAULT_DATASET $REPR > $LOG_FILE 2>&1
+status=$?
+if ! [ $status -eq 0 ]; then
+    log_error "To repr $REPR failed"
+    exit 3
+fi
 
-echo "Running vocabsize $REPR"
-pyhon logrec/dataprep/vocabsize.py en_100_percent $REPR > $LOG_FILE 2&>1 & 
-PID=$!
-echo "PID of vocabsize $REPR is $PID
-sleep 1800
-kill $PID
-pyhon logrec/dataprep/vocabsize.py en_100_percent $REPR > $LOG_FILE 2&>1
+log_info "Running vocabsize $REPR"
+python logrec/dataprep/vocabsize.py $DEFAULT_DATASET $REPR >> $LOG_FILE 2>&1 
 
-
-echo "Running wc $REPR"
-../logrec-cli/dataset/wc en_100_percent $REPR  > $LOG_FILE 2&>1
 
 if [ -z "$REPR" ]; then
-	echo "Repr cannot be empty: $REPR"
+	log_error "Repr cannot be empty: $REPR"
 	exit 2
 fi
 
-REPR_DIR="$HOME/log-recommender/nn-data/new_framework/en_100_percent/repr/$REPR"
+REPR_DIR="$PARSED_DATASETS_DIR/$DEFAULT_DATASET/repr/$REPR"
 
-echo "Removing repr dir $REPR_DIR"
+log_info "Removing repr dir $REPR_DIR"
 rm -r "$REPR_DIR"
-

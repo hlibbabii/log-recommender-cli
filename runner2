@@ -12,7 +12,7 @@ set -e  # Fail on first error
 
 #######  Directories
 
-ROOT_DIR="$HOME/logrec-runner"
+ROOT_DIR="$HOME/logrec-runner2"
 
 PARAM_DIR="$ROOT_DIR/param"
 LOG_DIR="$ROOT_DIR/log"
@@ -47,7 +47,7 @@ if ! [ -f "$LM_DEFAULT_CONFIG_PATH" ]; then
 fi
 EMPTY_CHANGED_PARAMS_PATH="$DEFAULT_CONFIGS/empty.py"
 if ! [ -f "$EMPTY_CHANGED_PARAMS_PATH" ]; then
-	echo "{}" > "$EMPTY_CHANGED_PARAMS_PATH"
+	touch "$EMPTY_CHANGED_PARAMS_PATH"
 fi
 
 ####### File names
@@ -163,7 +163,6 @@ while ! [ -z "$(ls $PARAM_DIR)" ] || ! [ -z "$(ls $RUNNING_JOBS_DIR)" ]; do
 		PROC=$!
 		echo -e "\t\t\t\t  Submitting job $JOB_FILE... on GPU $TARGET_GPU"
 		echo -e "\t\t\t\t  (JOB_ID: $JOB_ID)"
-		echo -e "\t\t\t\t  (PARAMS_PATH: $PARAMS_PATH)"
 		echo -e "\t\t\t\t  (PID: $PROC)"
 		echo "$PROC" > "$JOB_ID_FOLDER/$PROC_FILE_NAME"
 		WAIT_BEFORE_NEXT_CHECK=""

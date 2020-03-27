@@ -75,9 +75,10 @@ getVocabSize() {
             local _cmd="${PYTHON} logrec/dataprep/vocabsize.py --base-from ${PARSED_DATASETS_DIR} ${_dataset_name} ${_repr_name}"
             log_info "Running the following command:"
             printGreen "${_cmd}"
-            ${_cmd}
+            #${_cmd}
             cd -
-            _vocabsize=$(head -n 1 $_vocabsize_file | awk '{print $1}')
+            #_vocabsize=$(head -n 1 $_vocabsize_file | awk '{print $1}')
+            _vocabsize="UNK"
         fi
     else
         _vocabsize=$(head -n 1 $_vocabsize_file | awk '{print $1}')
